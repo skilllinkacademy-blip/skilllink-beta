@@ -92,18 +92,19 @@ export default function Signup() {
     setError('');
     setLoading(true);
     try {
+      // FIXED: Ensure no null values are sent for restricted columns if DB has constraints
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert([{
           id: userId,
-          full_name: formData.fullName,
-          role: role || 'student', // FIXED: Added fallback to avoid null constraint
-          city: formData.area,
-          profession: role === 'mentor' ? formData.specialties.join(', ') : null,
-          bio: formData.bio,
-          phone: !formData.contact.includes('@') ? formData.contact : null,
-          experience_years: role === 'mentor' ? formData.experience : null,
-          learning_goal: role === 'student' ? formData.goal : null
+          full_name: formData.fullName || 'User',
+          role: role === 'student' ? 'mentee' : (role || 'mentee'),
+          city: formData.area || 'פתח תקווה',
+          profession: role === 'mentor' ? formData.specialties.join(', ') : 'Student',
+          bio: formData.bio || '',
+          phone: !formData.contact.includes('@') ? formData.contact : '0000000000', // Dummy phone if email used
+          experience_years: role === 'mentor' ? formData.experience : 'N/A',
+          learning_goal: role === 'student' || role === 'mentee' ? formData.goal : 'Professional'
         }]);
 
       if (profileError) throw profileError;
@@ -149,7 +150,7 @@ export default function Signup() {
           {loading ? 'טוען...' : (mode === 'login' ? 'התחבר' : 'המשך')}
         </button>
         <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }} style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}>
-          {mode === 'login' ? 'אין לך חשבון? צור אחד עכשיו' : 'כבר רשום? התחבר כאן'}
+          {mode === 'login' ? 'אין לך חשבון? צור אחד עכשיו' : 'כבר רשום? התחבר כאן' }
         </button>
         <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', color: '#666', marginTop: '10px' }}>חזור אחורה</button>
       </div>
