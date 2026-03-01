@@ -6,12 +6,6 @@ export default function Dashboard() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [lang, setLang] = useState<'he'|'en'>('he')
-
-  const t = {
-    he: { title: 'SkillLink', welcome: 'ברוך הבא', logout: 'יציאה', feed: 'Feed', profile: 'פרופיל', mentor: 'מנטור', apprentice: 'חניך', welcomeMsg: 'ברוך הבא ל-SkillLink בטא!', exploreMsg: 'עיין ב-Feed, שתף טיפים, שאל שאלות, ותן פתרונות' },
-    en: { title: 'SkillLink', welcome: 'Welcome', logout: 'Logout', feed: 'Feed', profile: 'Profile', mentor: 'Mentor', apprentice: 'Apprentice', welcomeMsg: 'Welcome to SkillLink Beta!', exploreMsg: 'Browse the Feed, share tips, ask questions, and provide solutions' }
-  }[lang]
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -31,54 +25,48 @@ export default function Dashboard() {
   const initials = profile?.full_name?.split(' ').map((n:string)=>n[0]).join('').toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'
 
   return (
-    <div dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: lang === 'he' ? "'Heebo', sans-serif" : "'Inter', sans-serif" }}>
-      <div className="bg-orb bg-orb-1" />
-      <div className="bg-orb bg-orb-2" />
-
+    <div dir="rtl" style={{ minHeight: '100vh', background: '#F8F9FA', fontFamily: "'Heebo', sans-serif" }}>
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,14,23,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem', color: 'white' }}>S</div>
-            <span style={{ fontWeight: 800, fontSize: '1.2rem', background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SkillLink</span>
-          </div>
-          <button onClick={() => router.push('/feed')} style={{ background: 'none', border: 'none', color: 'var(--primary-light)', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.2s' }}>{t.feed}</button>
+      <nav style={{ background: 'white', borderBottom: '1px solid #E9ECEF', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: 900, fontSize: '1.6rem', letterSpacing: '-1px' }}>
+            <span style={{ color: '#000000' }}>Skill</span>
+            <span style={{ color: '#FF8C00' }}>Link</span>
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => setLang(lang === 'he' ? 'en' : 'he')} style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}>🌐 {lang === 'he' ? 'EN' : 'HE'}</button>
-          <div className="avatar" style={{ cursor: 'pointer' }}>{initials}</div>
-          <button onClick={handleLogout} style={{ background: 'rgba(255,101,132,0.15)', border: '1px solid rgba(255,101,132,0.3)', color: '#FF6584', padding: '8px 18px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}>{t.logout}</button>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <button onClick={() => router.push('/feed')} style={{ background: 'none', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', color: '#212529' }}>פיד</button>
+          <button onClick={() => router.push('/profile')} style={{ background: 'none', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', color: '#212529' }}>פרופיל</button>
+          <div onClick={() => router.push('/profile')} style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#FF8C00', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, cursor: 'pointer', overflow: 'hidden' }}>
+            {profile?.avatar_url ? <img src={profile.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+          </div>
+          <button onClick={handleLogout} style={{ background: 'none', border: '1px solid #dee2e6', padding: '6px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 600, color: '#495057' }}>יציאה</button>
         </div>
       </nav>
 
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px', position: 'relative', zIndex: 2, textAlign: 'center' }}>
-        {/* Hero */}
-        <div className="animate-fadeIn" style={{ marginBottom: '48px' }}>
-          <div className="avatar" style={{ width: '80px', height: '80px', fontSize: '2rem', margin: '0 auto 24px' }}>{initials}</div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '12px' }}>{t.welcomeMsg}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '1.1rem', color: 'var(--text)', fontWeight: 600 }}>{profile?.full_name || user?.email}</span>
-            {profile?.role && <span className="badge" style={{ background: profile.role === 'mentor' ? 'rgba(108,99,255,0.2)' : 'rgba(67,233,123,0.2)', color: profile.role === 'mentor' ? 'var(--primary-light)' : 'var(--accent)', border: `1px solid ${profile.role === 'mentor' ? 'rgba(108,99,255,0.3)' : 'rgba(67,233,123,0.3)'}` }}>{profile.role === 'mentor' ? t.mentor : t.apprentice}</span>}
+      {/* Hero */}
+      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '48px 24px' }}>
+        <div style={{ background: 'white', borderRadius: '24px', padding: '40px', border: '1px solid #E9ECEF', textAlign: 'center', marginBottom: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#FF8C00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', margin: '0 auto 20px', overflow: 'hidden' }}>
+            {profile?.avatar_url ? <img src={profile.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>{t.exploreMsg}</p>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#212529', marginBottom: '8px' }}>ברוך הבא, {profile?.full_name || user?.email}!</h1>
+          {profile?.role && <span style={{ background: '#FFF5E6', color: '#FF8C00', border: '1px solid #FFE0B3', padding: '4px 16px', borderRadius: '20px', fontWeight: 700, fontSize: '0.9rem' }}>{profile.role === 'mentor' ? 'מנטור' : 'חניך'}</span>}
+          <p style={{ color: '#6C757D', marginTop: '12px', fontSize: '1rem' }}>צפה בפיד, שתף טיפים, שאל שאלות ועזור לקהילה</p>
+          <button onClick={() => router.push('/feed')} style={{ background: '#000', color: 'white', border: 'none', padding: '14px 40px', borderRadius: '14px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', marginTop: '24px' }}>פתח את הפיד →</button>
         </div>
 
-        {/* CTA */}
-        <button onClick={() => router.push('/feed')} className="btn-primary" style={{ padding: '16px 40px', fontSize: '1.1rem', marginBottom: '32px' }}>
-          💭 {t.feed}
-        </button>
-
-        {/* Features Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '48px' }}>
+        {/* Quick Actions */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
           {[
-            { icon: '💡', title: lang === 'he' ? 'שתף טיפים' : 'Share Tips', desc: lang === 'he' ? 'שתף טיפים מקצועיים' : 'Share professional tips' },
-            { icon: '❓', title: lang === 'he' ? 'שאל שאלות' : 'Ask Questions', desc: lang === 'he' ? 'קבל תשובות מהקהילה' : 'Get answers from community' },
-            { icon: '✅', title: lang === 'he' ? 'ספק פתרונות' : 'Provide Solutions', desc: lang === 'he' ? 'עזור לאחרים' : 'Help others' }
-          ].map((f, i) => (
-            <div key={i} className="glass card-hover" style={{ padding: '32px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '16px' }}>{f.icon}</div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>{f.title}</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{f.desc}</p>
+            { icon: '💡', title: 'שתף טיפ', desc: 'שתף טיפים מקצועיים', color: '#FF8C00', bg: '#FFF5E6' },
+            { icon: '❓', title: 'שאל שאלה', desc: 'קבל תשובות מהקהילה', color: '#007AFF', bg: '#E6F2FF' },
+            { icon: '👤', title: 'עדך פרופיל', desc: 'צלם, שם, תחום מקצוע', color: '#6F42C1', bg: '#F3EEFF' },
+          ].map((item, i) => (
+            <div key={i} onClick={() => item.title === 'עדך פרופיל' ? router.push('/profile') : router.push('/feed')} style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #E9ECEF', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '12px', width: '52px', height: '52px', borderRadius: '14px', background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>{item.icon}</div>
+              <div style={{ fontWeight: 800, fontSize: '1rem', color: item.color, marginBottom: '6px' }}>{item.title}</div>
+              <div style={{ fontSize: '0.85rem', color: '#ADB5BD' }}>{item.desc}</div>
             </div>
           ))}
         </div>
