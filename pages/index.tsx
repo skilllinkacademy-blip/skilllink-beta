@@ -16,6 +16,13 @@ const TRUSTED = [
   'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
 ]
 
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+)
+
 export default function Home() {
   const router = useRouter()
 
@@ -36,16 +43,18 @@ export default function Home() {
         zIndex: 100,
         boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
       }}>
-        {/* Logo - left */}
+        {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 0, cursor: 'pointer' }} onClick={() => router.push('/')}>
           <span style={{ fontWeight: 900, fontSize: '1.6rem', color: '#111', letterSpacing: '-1.5px' }}>Skill</span>
           <span style={{ fontWeight: 300, fontSize: '1.6rem', color: '#111', letterSpacing: '-1.5px' }}>Link</span>
           <span style={{ fontWeight: 900, fontSize: '1.6rem', color: '#2563eb', marginLeft: 1 }}>.</span>
         </div>
 
-        {/* Search - center */}
+        {/* Search */}
         <div style={{ flex: 1, maxWidth: 440, margin: '0 48px', position: 'relative' }}>
-          <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: '0.85rem' }}>🔍</span>
+          <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+            <SearchIcon />
+          </span>
           <input
             type="text"
             placeholder="Search profession, skill, or mentor..."
@@ -63,7 +72,7 @@ export default function Home() {
           />
         </div>
 
-        {/* Right actions */}
+        {/* Right */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={() => router.push('/login')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', color: '#444', fontWeight: 500, padding: '8px 12px' }}>
@@ -103,26 +112,13 @@ export default function Home() {
           <p style={{ marginTop: 20, fontSize: '0.85rem', color: '#999' }}>Free to join. No credit card required.</p>
         </div>
 
-        {/* Right image */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        {/* Right image - no floating badge */}
+        <div style={{ flex: 1 }}>
           <img
             src="https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=85"
             alt="skilled trade professionals"
             style={{ width: '100%', maxWidth: 560, height: 420, objectFit: 'cover', borderRadius: 20, display: 'block' }}
           />
-          {/* floating badge */}
-          <div style={{
-            position: 'absolute', bottom: 24, left: 24,
-            background: '#fff', borderRadius: 12, padding: '12px 18px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>⚡</div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111' }}>Electrician</div>
-              <div style={{ fontSize: '0.78rem', color: '#888' }}>12 mentors available</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -134,7 +130,7 @@ export default function Home() {
           {TRADES.map((trade) => (
             <div key={trade.name} onClick={() => router.push('/signup?role=apprentice')}
               style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', height: 210, boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
-              <img src={trade.img} alt={trade.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} />
+              <img src={trade.img} alt={trade.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }} />
               <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
                 <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem' }}>{trade.name}</div>
