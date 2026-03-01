@@ -10,6 +10,11 @@ export default function Feed() {
   const [loading, setLoading] = useState(true)
   const [newPost, setNewPost] = useState('')
   const [isPosting, setIsPosting] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({})
+  const [commentText, setCommentText] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const init = async () => {
@@ -30,203 +35,272 @@ export default function Feed() {
       .from('posts')
       .select(`
         *,
-        *      `)
+        profiles:author_id(*)
+      `)
       .order('created_at', { ascending: false })
     
     if (!error && data) {
-      // Fetch likes count and comments count for each post
-      const postsWithCounts = await Promise.all(
+      const postsWithDetails = await Promise.all(
         data.map(async (post) => {
-          const { count: likesCount } = await supabase
-            .from('post_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('post_id', post.id)
-          
-          const { count: commentsCount } = await supabase
-            .from('post_comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('post_id', post.id)
-          
-          // Check if current user liked this post
-          const { data: userLike } = await supabase
-            .from('post_likes')
-            .select('id')
-            .eq('post_id', post.id)
-            .eq('user_id', user?.id)
-            .single()
+          const { count: likesCount } = await supabase.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', post.id)
+          const { data: comments } = await supabase.from('post_comments').select('*, profiles:author_id(*)').eq('post_id', post.id).order('created_at', { ascending: true })
+          const { data: userLike } = await supabase.from('post_likes').select('id').eq('post_id', post.id).eq('user_id', user?.id).single()
           
           return {
             ...post,
             likesCount: likesCount || 0,
-            commentsCount: commentsCount || 0,
+            comments: comments || [],
             isLiked: !!userLike
           }
         })
       )
-      setPosts(postsWithCounts)
+      setPosts(postsWithDetails)
     }
     setLoading(false)
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
+    }
+  }
+
   const createPost = async () => {
-    if (!newPost.trim() || !user) return
+    if ((!newPost.trim() && !imageFile) || !user) return
     
     setIsPosting(true)
+    let imageUrl = null
+
+    if (imageFile) {
+      setUploading(true)
+      const fileExt = imageFile.name.split('.').pop()
+      const fileName = `${Math.random()}.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('post-images')
+        .upload(filePath, imageFile)
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(filePath)
+        imageUrl = publicUrl
+      }
+      setUploading(false)
+    }
+
     const { error } = await supabase
       .from('posts')
       .insert([{
         author_id: user.id,
-        content: newPost
+        content: newPost,
+        image_url: imageUrl
       }])
     
     if (!error) {
       setNewPost('')
+      setImageFile(null)
+      setImagePreview(null)
       await fetchPosts()
     }
     setIsPosting(false)
   }
 
+  const addComment = async (postId: string) => {
+    const text = commentText[postId]
+    if (!text?.trim() || !user) return
+
+    const { error } = await supabase
+      .from('post_comments')
+      .insert([{
+        post_id: postId,
+        author_id: user.id,
+        content: text
+      }])
+
+    if (!error) {
+      setCommentText({ ...commentText, [postId]: '' })
+      await fetchPosts()
+    }
+  }
+
   const toggleLike = async (postId: string, isLiked: boolean) => {
     if (!user) return
-    
     if (isLiked) {
-      await supabase
-        .from('post_likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
-      await supabase
-        .from('post_likes')
-        .insert([{
-          post_id: postId,
-          user_id: user.id
-        }])
+      await supabase.from('post_likes').insert([{ post_id: postId, user_id: user.id }])
     }
-    
     await fetchPosts()
   }
 
-  const getProfessionIcon = (profession: string) => {
-    const icons: any = {
-      'plumber': '🔧',
-      'electrician': '⚡',
-      'carpenter': '🪚',
-      'mechanic': '🔩',
-      'barber': '✂️',
-      'welder': '🔥',
-      'construction': '🏗️',
-      'technician': '🛠️'
-    }
-    const key = Object.keys(icons).find(k => profession?.toLowerCase().includes(k))
-    return key ? icons[key] : '👷'
-  }
-
   return (
-    <div dir="rtl" style={{ minHeight: '100vh', background: '#f0f2f5', fontFamily: "'Heebo', sans-serif" }}>
-      {/* Top Navigation */}
-      <nav style={{ background: 'white', borderBottom: '1px solid #e4e6eb', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: 900, fontSize: '1.8rem', letterSpacing: '-1px' }}>
-            <span style={{ color: '#1877f2' }}>Skill</span>
-            <span style={{ color: '#42b72a' }}>Link</span>
-          </span>
+    <div style={{ background: '#f0f2f5', minHeight: '100vh', fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+      {/* HEADER */}
+      <nav style={{ background: '#fff', borderBottom: '1px solid #ddd', padding: '0 16px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 1000 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontWeight: 800, fontSize: '1.8rem', color: '#1877f2', letterSpacing: '-1px' }}>SkillLink</span>
+          <div style={{ background: '#f0f2f5', borderRadius: '20px', padding: '8px 12px', display: 'flex', alignItems: 'center', width: '240px' }}>
+            <span style={{ color: '#65676b', marginRight: '8px' }}>🔍</span>
+            <input placeholder="Search mentors..." style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.9rem', width: '100%' }} />
+          </div>
         </div>
-        
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-          <button onClick={() => router.push('/feed')} style={{ background: 'none', border: 'none', fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer', color: '#050505', padding: '8px' }}>🏠 בית</button>
-          <button onClick={() => router.push('/profile')} style={{ background: 'none', border: 'none', fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer', color: '#65676b', padding: '8px' }}>👤 פרופיל</button>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', cursor: 'pointer' }}>
+            <span style={{ fontSize: '1.4rem' }}>💬</span>
+          </div>
+          <div style={{ position: 'relative', cursor: 'pointer' }}>
+            <span style={{ fontSize: '1.4rem' }}>🔔</span>
+            <span style={{ position: 'absolute', top: -5, right: -5, background: '#e41e3f', color: '#fff', borderRadius: '50%', width: 16, height: 16, fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>1</span>
+          </div>
+          <img src={profile?.avatar_url || 'https://randomuser.me/api/portraits/men/32.jpg'} style={{ width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', border: '1px solid #ddd' }} onClick={() => router.push('/profile')} />
         </div>
-        
-        <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }} style={{ background: '#e4e6eb', color: '#050505', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>יציאה</button>
       </nav>
 
-      <main style={{ maxWidth: '680px', margin: '0 auto', padding: '16px' }}>
-        {/* Create Post Box */}
-        {user && (
-          <div style={{ background: 'white', borderRadius: '8px', padding: '16px', marginBottom: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e4e6eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                {profile?.avatar_url ? <img src={profile.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '👤'}
-              </div>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '32px', padding: '20px 16px' }}>
+        {/* LEFT SIDEBAR */}
+        <aside style={{ width: '280px', position: 'sticky', top: '76px', height: 'fit-content' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', background: '#e7f3ff', cursor: 'pointer' }}>
+              <span style={{ fontSize: '1.2rem' }}>🏠</span> <span style={{ fontWeight: 600 }}>Home</span>
+            </div>
+            <div onClick={() => router.push('/profile')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <span style={{ fontSize: '1.2rem' }}>👤</span> <span style={{ fontWeight: 500 }}>My Profile</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <span style={{ fontSize: '1.2rem' }}>💼</span> <span style={{ fontWeight: 500 }}>Apprenticeships</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <span style={{ fontSize: '1.2rem' }}>💬</span> <span style={{ fontWeight: 500 }}>Messages</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <span style={{ fontSize: '1.2rem' }}>🔖</span> <span style={{ fontWeight: 500 }}>Saved</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <span style={{ fontSize: '1.2rem' }}>⚙️</span> <span style={{ fontWeight: 500 }}>Settings</span>
+            </div>
+          </div>
+        </aside>
+
+        {/* CENTER FEED */}
+        <main style={{ flex: 1, maxWidth: '580px' }}>
+          {/* CREATE POST */}
+          <div style={{ background: '#fff', borderRadius: '8px', padding: '12px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+              <img src={profile?.avatar_url || 'https://randomuser.me/api/portraits/men/32.jpg'} style={{ width: 40, height: 40, borderRadius: '50%' }} />
               <textarea
                 value={newPost}
                 onChange={(e) => setNewPost(e.target.value)}
-                placeholder="מה עובר לך בראש?"
-                style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', fontSize: '1rem', fontFamily: 'inherit', minHeight: '50px', background: '#f0f2f5', borderRadius: '20px', padding: '12px 16px' }}
+                placeholder="Share your experience or tips..."
+                style={{ flex: 1, border: 'none', background: '#f0f2f5', borderRadius: '20px', padding: '10px 16px', outline: 'none', resize: 'none', fontSize: '1rem' }}
               />
             </div>
-            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e4e6eb', display: 'flex', justifyContent: 'flex-end' }}>
+            {imagePreview && (
+              <div style={{ position: 'relative', marginBottom: '12px' }}>
+                <img src={imagePreview} style={{ width: '100%', borderRadius: '8px' }} />
+                <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer' }}>✕</button>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#65676b', fontWeight: 600, padding: '8px', borderRadius: '8px' }}>
+                📷 Photo
+                <input type="file" accept="image/*" hidden onChange={handleImageChange} />
+              </label>
               <button
                 onClick={createPost}
-                disabled={!newPost.trim() || isPosting}
-                style={{ background: newPost.trim() ? '#1877f2' : '#e4e6eb', color: newPost.trim() ? 'white' : '#bcc0c4', border: 'none', padding: '8px 24px', borderRadius: '6px', fontWeight: 700, cursor: newPost.trim() ? 'pointer' : 'not-allowed', fontSize: '0.95rem' }}
+                disabled={(!newPost.trim() && !imageFile) || isPosting}
+                style={{ background: '#1877f2', color: '#fff', border: 'none', padding: '8px 24px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', opacity: (newPost.trim() || imageFile) ? 1 : 0.6 }}
               >
-                פרסם
+                {isPosting ? 'Posting...' : 'Post'}
               </button>
             </div>
           </div>
-        )}
 
-        {/* Posts Feed */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#65676b' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⏳</div>
-            <div>טוען פוסטים...</div>
-          </div>
-        ) : posts.length === 0 ? (
-          <div style={{ background: 'white', padding: '60px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '16px' }}>📝</div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#050505', marginBottom: '8px' }}>אין פוסטים עדיין</h2>
-            <p style={{ color: '#65676b', fontSize: '1rem' }}>היה הראשון לשתף משהו!</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {posts.map((post) => (
-              <div key={post.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                {/* Post Header */}
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e4e6eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginLeft: '12px' }}>
-                    {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : '👤'}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, color: '#050505', fontSize: '0.95rem' }}>
-                      {post.profiles?.full_name || 'משתמש'}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: '#65676b' }}>
-                      {getProfessionIcon(post.profiles?.profession)} {post.profiles?.profession || 'מקצוען'} · {new Date(post.created_at).toLocaleDateString('he-IL')}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Post Content */}
-                <div style={{ color: '#050505', fontSize: '1rem', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
-                  {post.content}
-                </div>
-
-                {post.image_url && (
-                  <img src={post.image_url} style={{ width: '100%', borderRadius: '8px', marginBottom: '12px' }} />
-                )}
-
-                {/* Post Actions */}
-                <div style={{ borderTop: '1px solid #e4e6eb', paddingTop: '8px', display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => toggleLike(post.id, post.isLiked)}
-                    style={{ flex: 1, background: 'none', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', color: post.isLiked ? '#1877f2' : '#65676b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                  >
-                    {post.isLiked ? '👍' : '👍🏻'} לייק ({post.likesCount})
-                  </button>
-                  <button
-                    style={{ flex: 1, background: 'none', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', color: '#65676b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                  >
-                    💬 תגובות ({post.commentsCount})
-                  </button>
+          {/* POSTS */}
+          {posts.map(post => (
+            <div key={post.id} style={{ background: '#fff', borderRadius: '8px', padding: '12px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <img src={post.profiles?.avatar_url || 'https://i.pravatar.cc/150?u=' + post.id} style={{ width: 40, height: 40, borderRadius: '50%' }} />
+                <div>
+                  <div style={{ fontWeight: 600 }}>{post.profiles?.full_name || 'David Cohen'}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#65676b' }}>{post.profiles?.profession || 'Mentor'} · {new Date(post.created_at).toLocaleDateString()}</div>
                 </div>
               </div>
-            ))}
+              <div style={{ marginBottom: '12px', fontSize: '0.95rem', lineHeight: 1.4 }}>{post.content}</div>
+              {post.image_url && <img src={post.image_url} style={{ width: '100%', borderRadius: '8px', marginBottom: '12px', border: '1px solid #eee' }} />}
+              
+              <div style={{ borderTop: '1px solid #eee', borderBottom: '1px solid #eee', display: 'flex', padding: '4px 0', marginBottom: '12px' }}>
+                <button onClick={() => toggleLike(post.id, post.isLiked)} style={{ flex: 1, background: 'none', border: 'none', padding: '8px', color: post.isLiked ? '#1877f2' : '#65676b', fontWeight: 600, cursor: 'pointer', borderRadius: '4px' }}>👍 Like ({post.likesCount})</button>
+                <button onClick={() => setExpandedComments({ ...expandedComments, [post.id]: !expandedComments[post.id] })} style={{ flex: 1, background: 'none', border: 'none', padding: '8px', color: '#65676b', fontWeight: 600, cursor: 'pointer', borderRadius: '4px' }}>💬 Comment ({post.comments?.length || 0})</button>
+                <button style={{ flex: 1, background: 'none', border: 'none', padding: '8px', color: '#65676b', fontWeight: 600, cursor: 'pointer', borderRadius: '4px' }}>↗️ Share</button>
+              </div>
+
+              {expandedComments[post.id] && (
+                <div style={{ marginTop: '12px' }}>
+                  {post.comments?.map((c: any) => (
+                    <div key={c.id} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                      <img src={c.profiles?.avatar_url || 'https://i.pravatar.cc/150?u=' + c.author_id} style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                      <div style={{ background: '#f0f2f5', borderRadius: '18px', padding: '8px 12px', flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{c.profiles?.full_name || 'User'}</div>
+                        <div style={{ fontSize: '0.9rem' }}>{c.content}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <img src={profile?.avatar_url || 'https://randomuser.me/api/portraits/men/32.jpg'} style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                    <input
+                      value={commentText[post.id] || ''}
+                      onChange={(e) => setCommentText({ ...commentText, [post.id]: e.target.value })}
+                      onKeyDown={(e) => e.key === 'Enter' && addComment(post.id)}
+                      placeholder="Write a comment..."
+                      style={{ flex: 1, background: '#f0f2f5', border: 'none', borderRadius: '18px', padding: '8px 12px', outline: 'none', fontSize: '0.9rem' }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </main>
+
+        {/* RIGHT SIDEBAR */}
+        <aside style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: '#fff', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', color: '#111' }}>Mentors for You</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { name: 'Michael R.', role: 'Marketing Expert', exp: '12 Years Exp.', src: 'https://randomuser.me/api/portraits/men/32.jpg' },
+                { name: 'Hila S.', role: 'Master Electrician', exp: '15 Years Exp.', src: 'https://randomuser.me/api/portraits/women/65.jpg' }
+              ].map((m, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px' }}>
+                  <img src={m.src} style={{ width: 48, height: 48, borderRadius: '50%' }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{m.name} · <span style={{ color: '#65676b', fontWeight: 400 }}>{m.role}</span></div>
+                    <div style={{ fontSize: '0.8rem', color: '#65676b', marginBottom: '8px' }}>{m.exp}</div>
+                    <button style={{ background: '#e7f3ff', color: '#1877f2', border: 'none', padding: '4px 12px', borderRadius: '4px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>View Profile</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </main>
+
+          <div style={{ background: '#fff', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', color: '#111' }}>Open Opportunities</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ padding: '12px', border: '1px solid #eee', borderRadius: '8px', cursor: 'pointer' }}>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1877f2' }}>Web Design Internship</div>
+                <div style={{ fontSize: '0.8rem', color: '#65676b' }}>Part-time · Remote</div>
+              </div>
+              <div style={{ padding: '12px', border: '1px solid #eee', borderRadius: '8px', cursor: 'pointer' }}>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1877f2' }}>Plumbing Training Program</div>
+                <div style={{ fontSize: '0.8rem', color: '#65676b' }}>3 Months · On-site</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }
