@@ -32,7 +32,7 @@ export default function Feed() {
   async function createPost() {
     if (!newPost.trim()) return
     setLoading(true)
-    await supabase.from('posts').insert([{ user_id: user.id, content: newPost, type: postType }])
+    await supabase.from('posts').insert([{ author_id: user.id, content: newPost, type: postType }])
     setNewPost('')
     await loadPosts()
     setLoading(false)
