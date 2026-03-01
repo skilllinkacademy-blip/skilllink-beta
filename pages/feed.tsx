@@ -3,13 +3,10 @@ import { supabase } from '../lib/supabaseClient'
 import { useRouter } from 'next/router'
 
 const categories = [
-  { name: 'חשמל', icon: '⚡', color: '#FFF4E5' },
-  { name: 'אינסטלציה', icon: '💧', color: '#E5F6FF' },
-  { name: 'מיזוג אוויר', icon: '❄', color: '#F0F0FF' },
-  { name: 'נגרות', icon: '🪵', color: '#F5EFE6' },
-  { name: 'תיקוני בית', icon: '🏠', color: '#E8F5E9' },
-  { name: 'מכונאות', icon: '🔧', color: '#F5F5F5' },
-  { name: 'שיפוצים', icon: '🏗', color: '#FFF0F0' }
+  { name: 'חשמל', icon: '⚡', en: 'Electricity' },
+  { name: 'אינסטלציה', icon: '🚰', en: 'Plumbing' },
+  { name: 'מיזוג אוויר', icon: '❄️', en: 'Air Conditioning' },
+  { name: 'נגרות', icon: '🪚', en: 'Carpentry' }
 ]
 
 export default function Feed() {
@@ -41,79 +38,59 @@ export default function Feed() {
 
   return (
     <div style={{ background: '#fff', minHeight: '100vh', direction: 'rtl', ...fontStyle }}>
-      <nav style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#fff', zIndex: 100, borderBottom: '1px solid #f0f0f0' }}>
+      {/* Header */}
+      <nav style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#fff', zIndex: 100 }}>
         <div style={{ fontWeight: 900, fontSize: '1.8rem', letterSpacing: '-1px' }}>SkillLink</div>
-        <img
-          src={profile?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=000&color=fff'}
-          style={{ width: 40, height: 40, borderRadius: '12px', cursor: 'pointer', border: '1px solid #eee' }}
-          onClick={() => router.push('/profile')}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img 
+            src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.full_name || 'User'}&background=random`} 
+            style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #eee' }}
+          />
+          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{profile?.full_name?.split(' ')[0] || 'אורח'} 👑</div>
+          <div style={{ fontSize: '1.4rem', position: 'relative' }}>🔔</div>
+        </div>
       </nav>
 
-      <div style={{ padding: '20px 20px 100px 20px' }}>
-        <div style={{ margin: '20px 0 30px 0' }}>
-          <h1 style={{ fontSize: '2.4rem', fontWeight: 900, lineHeight: 1.1, marginBottom: '20px' }}>
-            מצא את המקצוען הבא שלך
-          </h1>
-          <div style={{ display: 'flex', background: '#f8f8f8', borderRadius: '20px', padding: '15px 20px', alignItems: 'center', border: '1px solid #eee' }}>
-            <span style={{ fontSize: '1.2rem', marginLeft: '12px' }}>🔍</span>
-            <input
-              placeholder={'חפש חשמלאי, נגר, או כל תחום אחר...'}
-              style={{ background: 'transparent', border: 'none', outline: 'none', width: '100%', fontSize: '1.1rem' }}
+      <div style={{ padding: '0 20px 100px 20px' }}>
+        {/* Search Bar */}
+        <div style={{ position: 'relative', marginBottom: '30px' }}>
+          <div style={{ display: 'flex', background: '#fff', borderRadius: '12px', padding: '15px 20px', alignItems: 'center', border: '3px solid #000' }}>
+            <input 
+              placeholder='חפש מנטור, מקצוע או מיומנות...' 
+              style={{ background: 'transparent', border: 'none', outline: 'none', width: '100%', fontSize: '1.1rem', fontWeight: 600, textAlign: 'right' }} 
             />
+            <span style={{ fontSize: '1.4rem', marginRight: '10px' }}>🔍</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '15px', marginBottom: '25px' }}>
-          <button
-            onClick={() => setActiveCategory('הכל')}
-            style={{ padding: '10px 22px', borderRadius: '50px', whiteSpace: 'nowrap', fontWeight: 700, cursor: 'pointer', border: 'none', background: activeCategory === 'הכל' ? '#000' : '#f5f5f5', color: activeCategory === 'הכל' ? '#fff' : '#000' }}
-          >
-            הכל
-          </button>
+        {/* Welcome Message */}
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 900, textAlign: 'center', marginBottom: '30px' }}>
+          ברוכים הבאים, {profile?.full_name?.split(' ')[0] || 'חבר'}!
+        </h1>
+
+        {/* Category Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '40px' }}>
           {categories.map(cat => (
-            <button
-              key={cat.name}
-              onClick={() => setActiveCategory(cat.name)}
-              style={{ padding: '10px 22px', borderRadius: '50px', whiteSpace: 'nowrap', fontWeight: 700, cursor: 'pointer', border: 'none', background: activeCategory === cat.name ? '#000' : cat.color, color: activeCategory === cat.name ? '#fff' : '#000', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <span>{cat.icon}</span>
-              {cat.name}
-            </button>
+            <div key={cat.name} style={{ background: '#fff', borderRadius: '20px', padding: '20px', textAlign: 'center', border: '1px solid #f0f0f0', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{cat.icon}</div>
+              <div style={{ fontWeight: 800, fontSize: '1.2rem' }}>{cat.en}</div>
+              <div style={{ color: '#666', fontSize: '0.9rem', fontWeight: 600 }}>15 מנטורים זמינים</div>
+            </div>
           ))}
         </div>
 
+        {/* Recommended Mentors */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 900 }}>מקצוענים מובילים</h3>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {loading && <p>טוען...</p>}
-            {!loading && mentors.length === 0 && <p>לא נמצאו מקצוענים.</p>}
+          <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '20px' }}>מנטורים מומלצים</h3>
+          <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '20px' }}>
             {mentors.map(m => (
-              <div
-                key={m.id}
-                onClick={() => router.push('/profile/' + m.id)}
-                style={{ background: '#fff', border: '2px solid #f0f0f0', borderRadius: '20px', padding: '15px', display: 'flex', gap: '15px', cursor: 'pointer' }}
-              >
-                <img
-                  src={m.avatar_url || 'https://ui-avatars.com/api/?name=' + m.full_name + '&background=random'}
-                  style={{ width: 75, height: 75, borderRadius: '15px', objectFit: 'cover' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>{m.full_name}</h4>
-                      <p style={{ margin: '3px 0 8px', color: '#666', fontSize: '0.85rem' }}>{m.profession || 'מנטור מומחה'}</p>
-                    </div>
-                    <div style={{ background: '#fff9e6', color: '#b8860b', padding: '3px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, height: 'fit-content' }}>
-                      ★ 4.9
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ background: '#f5f5f5', padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>{m.experience_years || '5+ שנים'}</span>
-                    <span style={{ background: '#f5f5f5', padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>{m.city || 'פתח תקווה'}</span>
-                  </div>
+              <div key={m.id} style={{ minWidth: '200px', background: '#fff', borderRadius: '20px', overflow: 'hidden', border: '1px solid #f0f0f0', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                <img src={m.avatar_url || `https://ui-avatars.com/api/?name=${m.full_name}&background=random`} style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
+                <div style={{ padding: '15px', textAlign: 'center' }}>
+                  <h4 style={{ margin: '0 0 5px', fontWeight: 800 }}>{m.full_name}</h4>
+                  <p style={{ margin: '0 0 10px', color: '#666', fontSize: '0.85rem', fontWeight: 600 }}>{m.profession || 'חשמלאי מוסמך'}</p>
+                  <div style={{ color: '#FFD700', marginBottom: '15px' }}>★★★★★</div>
+                  <button style={{ width: '100%', background: '#000', color: '#fff', border: 'none', padding: '10px', borderRadius: '50px', fontWeight: 800, cursor: 'pointer' }}>צפה בפרופיל</button>
                 </div>
               </div>
             ))}
@@ -121,11 +98,13 @@ export default function Feed() {
         </div>
       </div>
 
-      <div style={{ position: 'fixed', bottom: 20, left: 20, right: 20, background: 'rgba(0,0,0,0.9)', borderRadius: '30px', padding: '15px', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-        <div style={{ color: '#fff', fontSize: '1.4rem', cursor: 'pointer' }} onClick={() => router.push('/feed')}>🏠</div>
-        <div style={{ color: '#888', fontSize: '1.4rem', cursor: 'pointer' }}>💬</div>
-        <div style={{ color: '#888', fontSize: '1.4rem', cursor: 'pointer' }}>📅</div>
-        <div style={{ color: '#888', fontSize: '1.4rem', cursor: 'pointer' }} onClick={() => router.push('/profile')}>👤</div>
+      {/* Bottom Navigation */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1px solid #eee', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000 }}>
+        <div style={{ fontSize: '1.8rem', cursor: 'pointer' }} onClick={() => router.push('/feed')}>🏠</div>
+        <div style={{ fontSize: '1.8rem', color: '#888', cursor: 'pointer' }}>🔍</div>
+        <div style={{ fontSize: '1.8rem', color: '#888', cursor: 'pointer' }}>💬</div>
+        <div style={{ fontSize: '1.8rem', color: '#888', cursor: 'pointer' }}>📅</div>
+        <div style={{ fontSize: '1.8rem', color: '#888', cursor: 'pointer' }} onClick={() => router.push('/profile')}>👤</div>
       </div>
     </div>
   )
