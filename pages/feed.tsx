@@ -35,83 +35,83 @@ export default function Feed() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F2F5] text-[#1C1E21]" dir="rtl">
-      {/* Navbar */}
-      <nav className="bg-white border-b sticky top-0 z-50 shadow-sm">
-        <div className="max-w-[1440px] mx-auto px-4 h-[56px] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-[#0866FF] text-[2.5rem] font-bold tracking-tight">SkillLink</h1>
-            <div className="relative mr-4">
+    <div className="min-h-screen bg-[#F0F2F5] text-[#1C1E21] font-sans" dir="rtl">
+      {/* Navbar - Fixed to top */}
+      <nav className="bg-white border-b sticky top-0 z-50 shadow-sm w-full">
+        <div className="max-w-[1440px] mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-[#0866FF] text-[2.5rem] font-bold tracking-tight cursor-pointer">SkillLink</h1>
+            <div className="relative">
               <input 
                 type="text" 
                 placeholder="חפש מנטורים, הכשרות..." 
-                className="bg-[#F0F2F5] rounded-full py-2 px-10 w-[240px] focus:outline-none focus:ring-1 focus:ring-blue-500 text-[15px]"
+                className="bg-[#F0F2F5] rounded-full py-2 px-10 w-60 focus:outline-none focus:ring-1 focus:ring-blue-500 text-[15px]"
               />
-              <span className="absolute right-3 top-2 text-gray-500">🔍</span>
+              <span className="absolute right-3 top-2.5 text-gray-500">🔍</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              <button className="w-10 h-10 bg-[#F0F2F5] rounded-full flex items-center justify-center hover:bg-gray-200 transition">💬</button>
-              <button className="w-10 h-10 bg-[#F0F2F5] rounded-full flex items-center justify-center hover:bg-gray-200 transition relative">
-                🔔
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[11px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">1</span>
-              </button>
-              <button className="w-10 h-10 bg-[#F0F2F5] rounded-full flex items-center justify-center hover:bg-gray-200 transition">👤</button>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-[#F0F2F5] rounded-full flex items-center justify-center hover:bg-gray-200 cursor-pointer transition">💬</div>
+            <div className="w-10 h-10 bg-[#F0F2F5] rounded-full flex items-center justify-center hover:bg-gray-200 cursor-pointer transition relative">
+              🔔
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white">1</span>
+            </div>
+            <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden cursor-pointer hover:opacity-80 transition">
+              <img src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.email}&background=random`} alt="Me" />
             </div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-[1440px] mx-auto flex justify-between px-4 py-4 gap-6">
+      {/* Main Content Layout */}
+      <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_340px] gap-6 px-4 py-6">
+        
         {/* Left Sidebar */}
-        <aside className="w-[300px] hidden lg:block sticky top-[72px] h-fit">
-          <div className="space-y-1">
-            {[
-              { icon: '🏠', label: 'דף הבית', active: true },
-              { icon: '👤', label: 'הפרופיל שלי' },
-              { icon: '💼', label: 'הכשרות' },
-              { icon: '✉️', label: 'הודעות' },
-              { icon: '🔖', label: 'שמורים' },
-              { icon: '⚙️', label: 'הגדרות' },
-            ].map((item, i) => (
-              <button key={i} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${item.active ? 'bg-gray-200' : 'hover:bg-gray-200'}`}>
-                <span className="text-2xl">{item.icon}</span>
-                <span className="font-semibold text-[15px]">{item.label}</span>
-              </button>
-            ))}
-          </div>
+        <aside className="hidden md:flex flex-col gap-2 sticky top-[80px] h-fit">
+          {[
+            { icon: '🏠', label: 'דף הבית', active: true },
+            { icon: '👤', label: 'הפרופיל שלי' },
+            { icon: '💼', label: 'הכשרות' },
+            { icon: '✉️', label: 'הודעות' },
+            { icon: '🔖', label: 'שמורים' },
+            { icon: '⚙️', label: 'הגדרות' },
+          ].map((item, i) => (
+            <button key={i} className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full text-right ${item.active ? 'bg-gray-200' : 'hover:bg-gray-200'}`}>
+              <span className="text-2xl">{item.icon}</span>
+              <span className="font-semibold text-[15px]">{item.label}</span>
+            </button>
+          ))}
         </aside>
 
-        {/* Center Content */}
-        <main className="max-w-[680px] w-full space-y-4">
+        {/* Center Feed */}
+        <main className="flex flex-col gap-4 w-full">
           {/* Create Post Card */}
-          <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-4">
-            <div className="flex gap-2 mb-3 border-b pb-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border">
-                <img src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.email}&background=random`} alt="Avatar" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-4 flex gap-2">
+              <div className="w-10 h-10 rounded-full border overflow-hidden flex-shrink-0">
+                <img src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.email}&background=random`} alt="Me" />
               </div>
               <button 
                 onClick={() => {}} 
-                className="flex-1 bg-[#F0F2F5] hover:bg-gray-200 rounded-full text-right px-4 py-2 text-gray-500 text-[17px] transition"
+                className="flex-1 bg-[#F0F2F5] hover:bg-gray-200 rounded-full text-right px-4 py-2 text-[#65676B] text-[17px] transition border-none outline-none"
               >
                 שתף את הניסיון שלך או טיפים...
               </button>
             </div>
-            <div className="flex items-center justify-around pt-1">
-              <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-[4px] transition text-[#65676B] font-semibold text-[15px]">
+            <div className="flex border-t border-gray-100 p-1">
+              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 hover:bg-gray-50 rounded-lg transition text-[#65676B] font-semibold">
                 <span className="text-green-500 text-xl">🖼️</span> תמונה
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-[4px] transition text-[#65676B] font-semibold text-[15px]">
+              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 hover:bg-gray-50 rounded-lg transition text-[#65676B] font-semibold">
                 <span className="text-red-500 text-xl">📹</span> סרטון
               </button>
               <button 
                 onClick={createPost}
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-[4px] transition text-[#0866FF] font-semibold text-[15px]"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 hover:bg-gray-50 rounded-lg transition text-[#0866FF] font-semibold"
               >
-                <span>📝</span> פוסט
+                📝 פוסט
               </button>
             </div>
           </div>
@@ -119,50 +119,50 @@ export default function Feed() {
           {/* Posts Feed */}
           <div className="space-y-4">
             {posts.map((post) => (
-              <div key={post.id} className="bg-white rounded-[8px] shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-4 pb-1">
+              <div key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border">
-                         <img src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${post.profiles?.full_name || 'User'}&background=random`} alt="Author" />
+                      <div className="w-10 h-10 rounded-full border overflow-hidden flex-shrink-0">
+                         <img src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${post.profiles?.full_name || 'User'}&background=random`} alt="User" />
                       </div>
-                      <div className="flex flex-col">
+                      <div>
                         <div className="flex items-center gap-1">
                           <span className="font-bold hover:underline cursor-pointer text-[15px]">{post.profiles?.full_name || 'משתמש SkillLink'}</span>
                           <span className="text-[#65676B] text-[13px]">• {post.profiles?.role || 'חבר קהילה'}</span>
                         </div>
-                        <span className="text-[#65676B] text-[13px] hover:underline cursor-pointer">לפני שעתיים • 🌍</span>
+                        <span className="text-[#65676B] text-[12px] hover:underline cursor-pointer flex items-center gap-1">לפני שעתיים • 🌍</span>
                       </div>
                     </div>
-                    <button className="text-[#65676B] hover:bg-gray-100 w-9 h-9 flex items-center justify-center rounded-full transition text-xl font-bold">•••</button>
+                    <button className="text-[#65676B] hover:bg-gray-100 w-8 h-8 flex items-center justify-center rounded-full transition font-bold text-lg">•••</button>
                   </div>
-                  <div className="mt-3 text-[15px] leading-relaxed whitespace-pre-wrap">
+                  <div className="mt-3 text-[15px] leading-snug whitespace-pre-wrap">
                     {post.content}
                   </div>
                 </div>
-                
-                {/* Mock image for carpenters example if content contains carpentry */}
+
+                {/* Example image for specific content */}
                 {post.content.includes('ספר') && (
-                  <div className="mt-3 border-y border-gray-100">
-                    <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=1000" alt="Carpentry" className="w-full" />
+                  <div className="border-y border-gray-100">
+                    <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1000" alt="Post content" className="w-full object-cover max-h-[400px]" />
                   </div>
                 )}
 
-                <div className="px-4 py-2 text-[#65676B] text-[15px] flex justify-between items-center">
-                  <div className="flex items-center gap-1 cursor-pointer hover:underline">
+                <div className="px-4 py-2 flex justify-between items-center text-[#65676B] text-[14px]">
+                  <div className="flex items-center gap-1 hover:underline cursor-pointer">
                     <span className="bg-[#0866FF] rounded-full w-4 h-4 flex items-center justify-center text-[10px] text-white">👍</span>
-                    <span>12 לייקים</span>
+                    <span>12</span>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <span className="hover:underline cursor-pointer">4 תגובות</span>
-                    <span className="hover:underline cursor-pointer">1 שיתוף</span>
+                    <span className="hover:underline cursor-pointer">שיתוף אחד</span>
                   </div>
                 </div>
 
-                <div className="border-t mx-4 pt-1 flex items-center justify-around mb-1">
-                   <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-[4px] transition text-[#65676B] font-semibold text-[15px]">👍 לייק</button>
-                   <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-[4px] transition text-[#65676B] font-semibold text-[15px]">💬 תגובה</button>
-                   <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-100 rounded-[4px] transition text-[#65676B] font-semibold text-[15px]">🔁 שתף</button>
+                <div className="border-t border-gray-100 mx-4 pt-1 flex items-center justify-around pb-1">
+                   <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-50 rounded-lg transition text-[#65676B] font-semibold text-[15px]">👍 לייק</button>
+                   <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-50 rounded-lg transition text-[#65676B] font-semibold text-[15px]">💬 תגובה</button>
+                   <button className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-50 rounded-lg transition text-[#65676B] font-semibold text-[15px]">🔁 שתף</button>
                 </div>
               </div>
             ))}
@@ -170,44 +170,44 @@ export default function Feed() {
         </main>
 
         {/* Right Sidebar Widgets */}
-        <aside className="w-[340px] hidden xl:block space-y-4 sticky top-[72px] h-fit">
-          <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-4">
+        <aside className="hidden xl:flex flex-col gap-4 sticky top-[80px] h-fit">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-bold text-[#65676B] text-[17px]">מנטורים בשבילך</h2>
-              <button className="text-[#0866FF] hover:bg-blue-50 px-2 py-1 rounded transition text-sm">ראה הכל</button>
+              <button className="text-[#0866FF] hover:bg-blue-50 px-2 py-1 rounded transition text-sm font-semibold">ראה הכל</button>
             </div>
             <div className="space-y-4">
               {[
                 { name: 'מיכאל ר.', role: 'מומחה שיווק', exp: '12 שנות ניסיון', img: 'https://i.pravatar.cc/150?u=michael' },
                 { name: 'הילה ס.', role: 'חשמלאית מוסמכת', exp: '15 שנות ניסיון', img: 'https://i.pravatar.cc/150?u=hila' }
               ].map((m, i) => (
-                <div key={i} className="flex gap-3 items-center group">
-                  <div className="w-[52px] h-[52px] rounded-full overflow-hidden border">
-                    <img src={m.img} alt={m.name} />
+                <div key={i} className="flex gap-3 items-center">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 flex-shrink-0">
+                    <img src={m.img} alt={m.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-[15px] group-hover:underline cursor-pointer">{m.name}</h4>
-                    <p className="text-[#65676B] text-[13px]">{m.role}</p>
-                    <p className="text-[#65676B] text-[12px]">{m.exp}</p>
+                    <h4 className="font-bold text-[14px] hover:underline cursor-pointer">{m.name}</h4>
+                    <p className="text-[#65676B] text-[12px] leading-tight">{m.role}</p>
+                    <p className="text-[#65676B] text-[11px]">{m.exp}</p>
                   </div>
-                  <button className="bg-blue-50 text-[#0866FF] font-bold text-[13px] px-3 py-1.5 rounded-full hover:bg-blue-100 transition">צפה</button>
+                  <button className="bg-[#E7F3FF] text-[#0866FF] font-bold text-[13px] px-3 py-1.5 rounded-full hover:bg-[#DBE7F2] transition flex-shrink-0">צפה</button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <h2 className="font-bold text-[#65676B] text-[17px] mb-4">הזדמנויות חמות</h2>
             <div className="space-y-3">
               {[
                 { title: 'סטאז׳ בעיצוב מוצר', type: 'חצי משרה • Petah Tikva', icon: '🎨' },
                 { title: 'תכנית הכשרה לחשמלאות', type: '3 חודשים • באתר', icon: '⚡' }
               ].map((opp, i) => (
-                <div key={i} className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 cursor-pointer transition">
-                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center text-xl">{opp.icon}</div>
-                  <div>
-                    <h4 className="font-bold text-[14px] text-gray-900">{opp.title}</h4>
-                    <p className="text-[#65676B] text-[12px]">{opp.type}</p>
+                <div key={i} className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-200 cursor-pointer transition">
+                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center text-xl flex-shrink-0">{opp.icon}</div>
+                  <div className="overflow-hidden">
+                    <h4 className="font-bold text-[14px] text-gray-900 truncate">{opp.title}</h4>
+                    <p className="text-[#65676B] text-[11px] truncate">{opp.type}</p>
                   </div>
                 </div>
               ))}
