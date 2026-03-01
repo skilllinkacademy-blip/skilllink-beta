@@ -4,12 +4,11 @@ import { useRouter } from 'next/router'
 
 export default function Feed() {
   const router = useRouter()
-  const [posts, setPosts] = useState<any[]>([])
-  const [newPost, setNewPost] = useState('')
-  const [postType, setPostType] = useState<'general' | 'tip' | 'question'>('general')
+  const [opportunities, setOpportunities] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
 
   useEffect(() => {
     const init = async () => {
@@ -19,157 +18,125 @@ export default function Feed() {
         const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
         if (data) setProfile(data)
       }
-      fetchPosts()
+      fetchOpportunities()
     }
     init()
   }, [])
 
-  const fetchPosts = async () => {
+  const fetchOpportunities = async () => {
     setLoading(true)
     const { data, error } = await supabase
-      .from('posts')
-      .select('*, profiles:author_id(*)')
+      .from('opportunities')
+      .select('*, profiles:employer_id(*)')
       .order('created_at', { ascending: false })
-    if (!error) setPosts(data || [])
+    if (!error) setOpportunities(data || [])
     setLoading(false)
   }
 
-  const handlePost = async () => {
-    if (!newPost.trim()) return
-    if (!user) {
-      router.push('/login')
-      return
-    }
-
-    const { error } = await supabase.from('posts').insert({
-      content: newPost,
-      author_id: user.id,
-      type: postType
-    })
-
-    if (!error) {
-      setNewPost('')
-      setPostType('general')
-      fetchPosts()
-    } else {
-      alert('שגיאה: ' + error.message)
-    }
-  }
-
-  const Logo = () => (
-    <div onClick={() => router.push('/dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-      <span style={{ fontWeight: 900, fontSize: '1.5rem', letterSpacing: '-1px' }}>
-        <span style={{ color: '#000000' }}>Skill</span>
-        <span style={{ color: '#FF8C00' }}>Link</span>
-      </span>
-    </div>
-  )
+  const filteredOpps = opportunities.filter(opp => filter === 'all' || opp.category === filter)
 
   return (
-    <div style={{ backgroundColor: '#F8F9FA', minHeight: '100vh', direction: 'rtl', fontFamily: "'Heebo', sans-serif" }}>
+    <div dir="rtl" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', fontFamily: "'Heebo', sans-serif" }}>
       {/* Navbar */}
-      <nav style={{ background: 'white', borderBottom: '1px solid #E9ECEF', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-        <Logo />
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          {user ? (
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              <div 
-                onClick={() => router.push('/profile')}
-                style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#eee', cursor: 'pointer', overflow: 'hidden', border: '1px solid #ddd' }}
-              >
-                {profile?.avatar_url ? <img src={profile.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{(profile?.full_name || user.email)[0].toUpperCase()}</div>}
-              </div>
-              <button onClick={() => supabase.auth.signOut().then(() => router.push('/login'))} style={{ background: 'none', border: '1px solid #dee2e6', padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500 }}>יציאה</button>
-            </div>
-          ) : (
-            <button onClick={() => router.push('/login')} style={{ background: '#000', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '20px', cursor: 'pointer', fontWeight: 600 }}>התחבר</button>
-          )}
+      <nav style={{ background: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(0,0,0,0.05)', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 20px rgba(0,0,0,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: 900, fontSize: '1.6rem', letterSpacing: '-1px' }}>
+            <span style={{ color: '#667eea' }}>Skill</span>
+            <span style={{ color: '#764ba2' }}>Link</span>
+          </span>
         </div>
+        
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', color: '#495057' }}>🏠 בית</button>
+          <button onClick={() => router.push('/new-opportunity')} style={{ background: 'none', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', color: '#495057' }}>➕ הוסף הזדמנות</button>
+          <button onClick={() => router.push('/profile')} style={{ background: 'none', border: 'none', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', color: '#495057' }}>👤 פרופיל</button>
+        </div>
+        
+        <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }} style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>יציאה</button>
       </nav>
 
-      <div style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }}>
-        {/* Create Post */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '16px', marginBottom: '24px', border: '1px solid #E9ECEF', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-             {['general', 'tip', 'question'].map((t) => (
-               <button 
-                 key={t}
-                 onClick={() => setPostType(t as any)}
-                 style={{ 
-                   flex: 1, 
-                   padding: '10px', 
-                   borderRadius: '12px', 
-                   border: '1px solid', 
-                   borderColor: postType === t ? (t === 'tip' ? '#FF8C00' : (t === 'question' ? '#007AFF' : '#000')) : '#E9ECEF',
-                   background: postType === t ? (t === 'tip' ? '#FFF5E6' : (t === 'question' ? '#E6F2FF' : '#F8F9FA')) : 'white',
-                   color: postType === t ? (t === 'tip' ? '#CC7000' : (t === 'question' ? '#005BBF' : '#000')) : '#6C757D',
-                   fontWeight: 700,
-                   fontSize: '0.9rem',
-                   cursor: 'pointer',
-                   transition: 'all 0.2s'
-                 }}
-               >
-                 {t === 'general' ? '📝 פוסט' : t === 'tip' ? '💡 טיפ' : '❓ שאלה'}
-               </button>
-             ))}
-          </div>
-          <textarea
-            placeholder={postType === 'tip' ? "שתף טיפ מקצועי..." : postType === 'question' ? "מה השאלה שלך?" : "מה תרצה לשתף?"}
-            value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
-            style={{ width: '100%', border: 'none', background: '#F8F9FA', padding: '16px', borderRadius: '12px', resize: 'none', outline: 'none', fontSize: '1.05rem', minHeight: '100px', marginBottom: '16px', boxSizing: 'border-box' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={handlePost}
-              disabled={!newPost.trim()}
-              style={{ background: newPost.trim() ? '#000' : '#ADB5BD', color: 'white', border: 'none', padding: '10px 32px', borderRadius: '12px', fontWeight: 700, cursor: newPost.trim() ? 'pointer' : 'default', fontSize: '1rem', transition: 'all 0.2s' }}
-            >
-              פרסם
-            </button>
-          </div>
+      {/* Main Content */}
+      <main style={{ padding: '48px 32px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '2.8rem', fontWeight: 900, color: 'white', marginBottom: '12px', textShadow: '0 2px 20px rgba(0,0,0,0.2)' }}>📰 פיד הזדמנויות</h1>
+          <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.95)' }}>מצא את ההזדמנות המושלמת עבורך</p>
         </div>
 
-        {/* Feed Posts */}
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {[
+            { value: 'all', label: 'הכל' },
+            { value: 'tech', label: '💻 טכנולוגיה' },
+            { value: 'design', label: '🎨 עיצוב' },
+            { value: 'marketing', label: '📣 שיווק' },
+            { value: 'sales', label: '💼 מכירות' },
+            { value: 'other', label: '🔧 אחר' },
+          ].map(f => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              style={{
+                background: filter === f.value ? 'white' : 'rgba(255,255,255,0.2)',
+                color: filter === f.value ? '#667eea' : 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '24px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                transition: 'all 0.3s',
+                boxShadow: filter === f.value ? '0 4px 12px rgba(0,0,0,0.15)' : 'none'
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Opportunities Grid */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: '#ADB5BD' }}>מעלה פוסטים...</div>
+          <div style={{ textAlign: 'center', padding: '60px', color: 'white', fontSize: '1.2rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⏳</div>
+            <div>טוען הזדמנויות...</div>
+          </div>
+        ) : filteredOpps.length === 0 ? (
+          <div style={{ background: 'rgba(255,255,255,0.95)', padding: '60px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🔍</div>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#212529', marginBottom: '8px' }}>אין הזדמנויות זמינות</h2>
+            <p style={{ color: '#6c757d', fontSize: '1.1rem', marginBottom: '24px' }}>היה הראשון לפרסם הזדמנות!</p>
+            <button onClick={() => router.push('/new-opportunity')} style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>➕ צור הזדמנות</button>
+          </div>
         ) : (
-          posts.map(p => (
-            <div key={p.id} style={{ background: 'white', padding: '24px', borderRadius: '16px', marginBottom: '20px', border: '1px solid #E9ECEF', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#F1F3F5', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid #E9ECEF' }}>
-                    {p.profiles?.avatar_url ? <img src={p.profiles.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ fontWeight: 700, color: '#495057' }}>{(p.profiles?.full_name || '?')[0]}</div>}
-                  </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+            {filteredOpps.map((opp) => (
+              <div key={opp.id} style={{ background: 'white', borderRadius: '16px', padding: '28px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', transition: 'all 0.3s', cursor: 'pointer', border: '2px solid transparent' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: '#212529' }}>{p.profiles?.full_name || 'משתמש מערכת'}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#ADB5BD', fontWeight: 500 }}>{new Date(p.created_at).toLocaleDateString('he-IL')}</div>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#212529', marginBottom: '8px' }}>{opp.title}</h3>
+                    <div style={{ fontSize: '0.9rem', color: '#6c757d', marginBottom: '8px' }}>📍 {opp.location || 'פתח תקווה'}</div>
+                  </div>
+                  <div style={{ background: '#e7e9fc', color: '#667eea', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700 }}>
+                    {opp.category || 'כללי'}
                   </div>
                 </div>
-                {p.type !== 'general' && (
-                  <span style={{ 
-                    padding: '6px 14px', 
-                    borderRadius: '20px', 
-                    fontSize: '0.8rem', 
-                    fontWeight: 800,
-                    background: p.type === 'tip' ? '#FFF5E6' : '#E6F2FF',
-                    color: p.type === 'tip' ? '#FF8C00' : '#007AFF',
-                    border: `1px solid ${p.type === 'tip' ? '#FFE0B3' : '#B3D7FF'}`
-                  }}>
-                    {p.type === 'tip' ? '💡 טיפ מקצועי' : '❓ שאלת פרויקט'}
-                  </span>
-                )}
+                
+                <p style={{ color: '#495057', lineHeight: '1.6', marginBottom: '16px', fontSize: '0.95rem' }}>{opp.description?.substring(0, 120)}{opp.description?.length > 120 && '...'}</p>
+                
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                  {opp.skills?.slice(0,3).map((skill:string, i:number) => (
+                    <span key={i} style={{ background: '#f0e7fc', color: '#764ba2', padding: '4px 12px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600 }}>{skill}</span>
+                  ))}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid #e9ecef' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>פורסם לפני {Math.floor((Date.now() - new Date(opp.created_at).getTime()) / (1000 * 60 * 60 * 24))} ימים</div>
+                  <button onClick={() => router.push(`/opportunity/${opp.id}`)} style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '6px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}>צפה</button>
+                </div>
               </div>
-              <div style={{ fontSize: '1.1rem', lineHeight: '1.6', color: '#212529', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>{p.content}</div>
-              <div style={{ borderTop: '1px solid #F1F3F5', paddingTop: '16px', display: 'flex', justifyContent: 'space-around', color: '#6C757D', fontWeight: 700, fontSize: '0.95rem' }}>
-                <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>👍 לייק</span>
-                <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>💬 תגובה</span>
-                <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>🔁 שתף</span>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }
