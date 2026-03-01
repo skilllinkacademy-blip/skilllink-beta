@@ -7,10 +7,10 @@ export default function Home() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push('/dashboard')
+      if (session) router.push('/feed')
       else router.push('/login')
     })
   }, [])
 
-  return <div style={{ padding: '2rem' }}>Loading...</div>
+  return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
 }
