@@ -1,118 +1,257 @@
 import { useRouter } from 'next/router'
 
+const TRADES = [
+  { name: 'Electrician', img: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&q=80' },
+  { name: 'Plumber', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80' },
+  { name: 'Mechanic', img: 'https://images.unsplash.com/photo-1530046339160-ce3e530c7d2f?w=400&q=80' },
+  { name: 'Carpenter', img: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&q=80' },
+]
+
+const TRUSTED = [
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80',
+]
+
 export default function Home() {
   const router = useRouter()
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#ffffff',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: '"Segoe UI", system-ui, -apple-system, sans-serif',
-      direction: 'rtl',
-      padding: '40px 24px'
-    }}>
-      {/* Logo Section */}
-      <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-        <h1 style={{
-          fontSize: '5rem',
-          fontWeight: 900,
-          letterSpacing: '-3px',
-          margin: 0,
-          color: '#000',
-          lineHeight: 1
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: '"Segoe UI", system-ui, sans-serif' }}>
+
+      {/* TOP NAV */}
+      <nav style={{
+        background: '#fff',
+        borderBottom: '1px solid #e8e8e8',
+        padding: '0 40px',
+        height: 60,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <span style={{ fontWeight: 900, fontSize: '1.5rem', color: '#000', letterSpacing: '-1px' }}>Skill</span>
+          <span style={{ fontWeight: 400, fontSize: '1.5rem', color: '#000', letterSpacing: '-1px' }}>Link</span>
+          <span style={{ fontWeight: 900, fontSize: '1.5rem', color: '#2563eb' }}>...</span>
+        </div>
+
+        {/* Search */}
+        <div style={{
+          flex: 1,
+          maxWidth: 480,
+          margin: '0 40px',
+          position: 'relative',
         }}>
-          SkillLink
-        </h1>
-        <p style={{
-          fontSize: '1.5rem',
-          fontWeight: 700,
-          margin: '10px 0 0 0',
-          color: '#000'
+          <input
+            type="text"
+            placeholder="Search profession, skill, or mentor..."
+            style={{
+              width: '100%',
+              padding: '8px 16px 8px 40px',
+              borderRadius: 24,
+              border: '1px solid #ddd',
+              fontSize: '0.9rem',
+              background: '#f5f5f5',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#999', fontSize: '0.9rem' }}>🔍</span>
+        </div>
+
+        {/* Nav right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <button
+            onClick={() => router.push('/login')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', color: '#333', fontWeight: 500 }}
+          >
+            Sign in
+          </button>
+          <button
+            onClick={() => router.push('/signup')}
+            style={{
+              background: '#2563eb',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              padding: '8px 20px',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Join free
+          </button>
+        </div>
+      </nav>
+
+      {/* HERO SECTION */}
+      <div style={{
+        background: '#fff',
+        display: 'flex',
+        alignItems: 'center',
+        minHeight: 480,
+        padding: '0 80px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Left text */}
+        <div style={{ flex: 1, zIndex: 2, maxWidth: 520 }}>
+          <h1 style={{
+            fontSize: '3rem',
+            fontWeight: 900,
+            color: '#111',
+            lineHeight: 1.15,
+            margin: '0 0 16px',
+            letterSpacing: '-1px',
+          }}>
+            Learn directly from<br />real professionals
+          </h1>
+          <p style={{
+            fontSize: '1.05rem',
+            color: '#555',
+            marginBottom: 36,
+            lineHeight: 1.6,
+            maxWidth: 420,
+          }}>
+            Connect with skilled mentors in various trades and start your apprenticeship journey.
+          </p>
+          <div style={{ display: 'flex', gap: 14 }}>
+            <button
+              onClick={() => router.push('/signup?role=mentor')}
+              style={{
+                background: '#2563eb',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '13px 28px',
+                fontSize: '1rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Join as Mentor
+            </button>
+            <button
+              onClick={() => router.push('/signup?role=apprentice')}
+              style={{
+                background: '#fff',
+                color: '#111',
+                border: '2px solid #111',
+                borderRadius: 8,
+                padding: '13px 28px',
+                fontSize: '1rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Join as Apprentice
+            </button>
+          </div>
+        </div>
+
+        {/* Right image */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          position: 'relative',
+          minHeight: 400,
         }}>
-          החוויה המושלמת לחיבור בין מקצוענים
+          <img
+            src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=700&q=80"
+            alt="skilled professionals"
+            style={{
+              width: '100%',
+              maxWidth: 520,
+              height: 420,
+              objectFit: 'cover',
+              borderRadius: 16,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* POPULAR APPRENTICESHIPS */}
+      <div style={{ padding: '56px 80px', background: '#f5f5f5' }}>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111', marginBottom: 28 }}>
+          Popular Apprenticeships
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          {TRADES.map((trade) => (
+            <div
+              key={trade.name}
+              onClick={() => router.push('/signup?role=apprentice')}
+              style={{
+                position: 'relative',
+                borderRadius: 12,
+                overflow: 'hidden',
+                cursor: 'pointer',
+                height: 200,
+              }}
+            >
+              <img
+                src={trade.img}
+                alt={trade.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
+                padding: '24px 14px 14px',
+              }}>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: '1rem' }}>{trade.name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* TRUSTED BY */}
+      <div style={{ padding: '48px 80px', background: '#fff', textAlign: 'center' }}>
+        <p style={{ color: '#888', fontSize: '0.95rem', marginBottom: 24 }}>
+          Trusted by thousands of skilled workers
         </p>
-      </div>
-
-      {/* Buttons Section */}
-      <div style={{ width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h3 style={{ textAlign: 'center', fontWeight: 800, marginBottom: '10px' }}>להצטרפות לקהילה:</h3>
-        <button
-          onClick={() => router.push('/signup?mode=signup&role=mentor')}
-          style={{
-            width: '100%',
-            padding: '22px',
-            background: '#000',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '50px',
-            fontSize: '1.4rem',
-            fontWeight: 800,
-            cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-          }}
-        >
-          הרשמה כמנטור
-        </button>
-        <button
-          onClick={() => router.push('/signup?mode=signup&role=student')}
-          style={{
-            width: '100%',
-            padding: '22px',
-            background: '#fff',
-            color: '#000',
-            border: '3px solid #000',
-            borderRadius: '50px',
-            fontSize: '1.4rem',
-            fontWeight: 800,
-            cursor: 'pointer'
-          }}
-        >
-          הרשמה כתלמיד
-        </button>
-
-        <div style={{ margin: '30px 0', borderTop: '1px solid #eee', position: 'relative' }}>
-          <span style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: '#fff', padding: '0 15px', color: '#999', fontWeight: 600 }}>או</span>
-        </div>
-
-        <button
-          onClick={() => router.push('/signup?mode=login')}
-          style={{
-            width: '100%',
-            padding: '20px',
-            background: '#e6b800',
-            color: '#000',
-            border: 'none',
-            borderRadius: '50px',
-            fontSize: '1.3rem',
-            fontWeight: 800,
-            cursor: 'pointer'
-          }}
-        >
-          כניסה לחשבון קיים
-        </button>
-      </div>
-
-      {/* Footer Section */}
-      <div style={{ marginTop: '60px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ cursor: 'pointer', opacity: 0.6 }}>
-            <svg width="32" height="32" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c1.82-1.67 2.87-4.14 2.87-7.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-          </div>
-          <div style={{ cursor: 'pointer', opacity: 0.6 }}>
-            <svg width="32" height="32" viewBox="0 0 24 24">
-              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.11.74.82 0 1.99-.83 3.58-.69 1.5.13 2.65.73 3.33 1.72-3.01 1.81-2.52 5.98.48 7.21-.61 1.53-1.41 3.03-2.5 3.99zM12.03 7.25c-.08-2.69 2.21-4.91 4.85-5.1.36 2.86-2.86 5.08-4.85 5.1z" fill="#000"/>
-            </svg>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+          {TRUSTED.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt="user"
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 12,
+                objectFit: 'cover',
+                border: '2px solid #eee',
+              }}
+            />
+          ))}
         </div>
       </div>
+
+      {/* FOOTER */}
+      <div style={{
+        background: '#111',
+        color: '#888',
+        textAlign: 'center',
+        padding: '24px',
+        fontSize: '0.85rem',
+      }}>
+        © 2026 SkillLink. All rights reserved.
+      </div>
+
     </div>
   )
 }
