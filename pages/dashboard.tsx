@@ -7,105 +7,174 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [opportunities, setOpportunities] = useState<any[]>([])
+  const [applications, setApplications] = useState<any[]>([])
   const [lang, setLang] = useState<'he'|'en'>('he')
 
   const t = {
-    he: { title: 'SkillLink', welcome: 'ברוך הבא', logout: 'יציאה', apprenticeships: 'תוכניות חניכה', addNew: '+ פרסם תוכנית', empty: 'אין תוכניות חניכה עדיין', emptyHint: 'לחץ על "פרסם תוכנית" כדי להתחיל', open: 'פתוחה', closed: 'סגורה', location: 'מיקום', apply: 'הגש בקשה', myProfile: 'הפרופיל שלי', mentor: 'מנטור', mentee: 'חניך', home: 'בית', search: 'חיפוש', messages: 'הודעות' },
-    en: { title: 'SkillLink', welcome: 'Welcome', logout: 'Logout', apprenticeships: 'Apprenticeships', addNew: '+ Post Program', empty: 'No apprenticeship programs yet', emptyHint: 'Click "Post Program" to get started', open: 'Open', closed: 'Closed', location: 'Location', apply: 'Apply', myProfile: 'My Profile', mentor: 'Mentor', mentee: 'Apprentice', home: 'Home', search: 'Search', messages: 'Messages' }
+    he: {
+      title: 'SkillLink',
+      welcome: 'ברוך הבא',
+      logout: 'יציאה',
+      myOpps: 'ההזדמנויות שלי',
+      myApps: 'הבקשות שלי',
+      addOpp: '+ הוסף הזדמנות',
+      noOpps: 'אין הזדמנויות עדיין',
+      noApps: 'אין בקשות עדיין',
+      mentor: 'מנטור',
+      apprentice: 'חניך',
+      pending: 'ממתין',
+      accepted: 'אושר',
+      rejected: 'נדחה',
+      spots: 'מקומות',
+      duration: 'משך',
+      profile: 'פרופיל',
+      role: 'תפקיד',
+    },
+    en: {
+      title: 'SkillLink',
+      welcome: 'Welcome',
+      logout: 'Logout',
+      myOpps: 'My Opportunities',
+      myApps: 'My Applications',
+      addOpp: '+ Add Opportunity',
+      noOpps: 'No opportunities yet',
+      noApps: 'No applications yet',
+      mentor: 'Mentor',
+      apprentice: 'Apprentice',
+      pending: 'Pending',
+      accepted: 'Accepted',
+      rejected: 'Rejected',
+      spots: 'spots',
+      duration: 'duration',
+      profile: 'Profile',
+      role: 'Role',
+    }
   }[lang]
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push('/login'); return }
       setUser(session.user)
-      supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => setProfile(data))
+      supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
+        if (data) setProfile(data)
+      })
+      supabase.from('opportunities').select('*').eq('created_by', session.user.id).order('created_at', { ascending: false }).then(({ data }) => {
+        if (data) setOpportunities(data)
+      })
+      supabase.from('applications').select('*, opportunities(title)').eq('applicant_id', session.user.id).order('created_at', { ascending: false }).then(({ data }) => {
+        if (data) setApplications(data)
+      })
     })
   }, [])
 
-  useEffect(() => {
-    if (!user) return
-    supabase.from('opportunities').select('*').order('created_at', { ascending: false }).then(({ data }) => {
-      if (data) setOpportunities(data)
-    })
-  }, [user])
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
-  const handleLogout = async () => { await supabase.auth.signOut(); router.push('/login') }
+  const statusBadge = (status: string) => {
+    const map: any = { pending: 'badge-pending', accepted: 'badge-accepted', rejected: 'badge-rejected' }
+    const label: any = { pending: t.pending, accepted: t.accepted, rejected: t.rejected }
+    return <span className={`badge ${map[status] || 'badge-pending'}`}>{label[status] || status}</span>
+  }
 
-  if (!user) return (
-    <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', background:'#f8f9fb' }}>
-      <div style={{ width:40, height:40, border:'4px solid #e0e0e0', borderTop:'4px solid #6c63ff', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-    </div>
-  )
+  const initials = profile?.full_name?.split(' ').map((n:string)=>n[0]).join('').toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f8f9fb', fontFamily:"'Segoe UI', Arial, sans-serif" }}>
-      {/* NAV */}
-      <nav style={{ background:'#fff', borderBottom:'1px solid #ececec', padding:'0 2rem', display:'flex', alignItems:'center', justifyContent:'space-between', height:64, position:'sticky', top:0, zIndex:100, boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'2rem' }}>
-          <span style={{ fontSize:'1.5rem', fontWeight:800, background:'linear-gradient(135deg,#6c63ff,#3ecfcf)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>SkillLink</span>
-          <div style={{ display:'flex', gap:'1.5rem' }}>
-            {[{label: t.home, href:'#'}, {label: t.apprenticeships, href:'#'}, {label: t.messages, href:'#'}].map(item => (
-              <a key={item.label} href={item.href} style={{ color:'#555', textDecoration:'none', fontSize:'0.9rem', fontWeight:500, padding:'0.3rem 0', borderBottom:'2px solid transparent' }}>{item.label}</a>
-            ))}
-          </div>
+    <div dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: lang === 'he' ? "'Heebo', sans-serif" : "'Inter', sans-serif" }}>
+      {/* BG Orbs */}
+      <div className="bg-orb bg-orb-1" />
+      <div className="bg-orb bg-orb-2" />
+
+      {/* Navbar */}
+      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,14,23,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem', color: 'white' }}>S</div>
+          <span style={{ fontWeight: 800, fontSize: '1.2rem', background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SkillLink</span>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-          <button onClick={() => setLang(lang==='he'?'en':'he')} style={{ background:'#f0f0f0', border:'none', borderRadius:20, padding:'0.3rem 0.8rem', cursor:'pointer', fontSize:'0.8rem', color:'#555' }}>{lang==='he'?'EN':'HE'}</button>
-          <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
-            <div style={{ width:36, height:36, borderRadius:'50%', background:'linear-gradient(135deg,#6c63ff,#3ecfcf)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:700, fontSize:'0.9rem' }}>{profile?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}</div>
-            <span style={{ fontSize:'0.85rem', color:'#333', maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile?.name || user?.email}</span>
-          </div>
-          <span style={{ fontSize:'0.75rem', background: profile?.role==='mentor'?'#e8f5e9':'#e3f2fd', color: profile?.role==='mentor'?'#2e7d32':'#1565c0', padding:'0.2rem 0.6rem', borderRadius:20, fontWeight:600 }}>{profile?.role==='mentor' ? t.mentor : t.mentee}</span>
-          <button onClick={handleLogout} style={{ background:'transparent', border:'1px solid #ddd', borderRadius:8, padding:'0.35rem 0.9rem', cursor:'pointer', fontSize:'0.82rem', color:'#666' }}>{t.logout}</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => setLang(lang === 'he' ? 'en' : 'he')} style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}>🌐 {lang === 'he' ? 'EN' : 'HE'}</button>
+          <div className="avatar" style={{ cursor: 'pointer' }}>{initials}</div>
+          <button onClick={handleLogout} style={{ background: 'rgba(255,101,132,0.15)', border: '1px solid rgba(255,101,132,0.3)', color: '#FF6584', padding: '8px 18px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}>{t.logout}</button>
         </div>
       </nav>
 
-      {/* BODY */}
-      <div style={{ maxWidth:1100, margin:'2rem auto', padding:'0 1.5rem', direction: lang==='he'?'rtl':'ltr' }}>
-        {/* HEADER ROW */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2rem' }}>
-          <div>
-            <h1 style={{ fontSize:'1.8rem', fontWeight:800, color:'#1a1a2e', margin:0 }}>{t.apprenticeships}</h1>
-            <p style={{ color:'#888', margin:'0.3rem 0 0', fontSize:'0.9rem' }}>Petah Tikva</p>
+      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px', position: 'relative', zIndex: 2 }}>
+        {/* Hero greeting */}
+        <div className="animate-fadeIn" style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
+            <div className="avatar" style={{ width: '56px', height: '56px', fontSize: '1.4rem' }}>{initials}</div>
+            <div>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>{t.welcome}{profile?.full_name ? `, ${profile.full_name}` : ''}!</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{user?.email}</span>
+                {profile?.role && <span className="badge" style={{ background: profile.role === 'mentor' ? 'rgba(108,99,255,0.2)' : 'rgba(67,233,123,0.2)', color: profile.role === 'mentor' ? 'var(--primary-light)' : 'var(--accent)', border: `1px solid ${profile.role === 'mentor' ? 'rgba(108,99,255,0.3)' : 'rgba(67,233,123,0.3)'}` }}>{profile.role === 'mentor' ? t.mentor : t.apprentice}</span>}
+              </div>
+            </div>
           </div>
-          {profile?.role === 'mentor' && (
-            <a href="/new-opportunity" style={{ background:'linear-gradient(135deg,#6c63ff,#3ecfcf)', color:'white', border:'none', borderRadius:10, padding:'0.7rem 1.5rem', cursor:'pointer', fontSize:'0.95rem', fontWeight:700, textDecoration:'none', boxShadow:'0 4px 14px rgba(108,99,255,0.3)' }}>{t.addNew}</a>
-          )}
         </div>
 
-        {/* GRID */}
-        {opportunities.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'5rem 2rem', background:'white', borderRadius:16, boxShadow:'0 2px 12px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize:'4rem', marginBottom:'1rem' }}>🌱</div>
-            <h3 style={{ color:'#333', margin:'0 0 0.5rem' }}>{t.empty}</h3>
-            <p style={{ color:'#aaa', fontSize:'0.9rem' }}>{t.emptyHint}</p>
-          </div>
-        ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.5rem' }}>
-            {opportunities.map((o) => (
-              <div key={o.id} style={{ background:'white', borderRadius:16, overflow:'hidden', boxShadow:'0 2px 12px rgba(0,0,0,0.07)', transition:'transform 0.2s, box-shadow 0.2s', cursor:'pointer' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform='translateY(-4px)'; (e.currentTarget as HTMLDivElement).style.boxShadow='0 8px 24px rgba(0,0,0,0.12)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform='translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow='0 2px 12px rgba(0,0,0,0.07)' }}>
-                <div style={{ background:'linear-gradient(135deg,#6c63ff22,#3ecfcf22)', padding:'1.5rem 1.5rem 1rem' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                    <h3 style={{ margin:0, fontSize:'1.05rem', fontWeight:700, color:'#1a1a2e', lineHeight:1.4 }}>{o.title}</h3>
-                    <span style={{ background: o.status==='open'?'#e8f5e9':'#ffebee', color: o.status==='open'?'#2e7d32':'#c62828', padding:'0.2rem 0.6rem', borderRadius:20, fontSize:'0.72rem', fontWeight:700, whiteSpace:'nowrap', marginRight:'0.5rem' }}>{o.status==='open'?t.open:t.closed}</span>
-                  </div>
-                </div>
-                <div style={{ padding:'1rem 1.5rem 1.5rem' }}>
-                  <p style={{ color:'#666', fontSize:'0.88rem', lineHeight:1.6, margin:'0 0 1rem', minHeight:48 }}>{o.description || ''}</p>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <span style={{ fontSize:'0.8rem', color:'#999' }}>📍 {o.city || 'Petah Tikva'}</span>
-                    {profile?.role === 'mentee' && o.status === 'open' && (
-                      <button style={{ background:'linear-gradient(135deg,#6c63ff,#3ecfcf)', color:'white', border:'none', borderRadius:8, padding:'0.4rem 1rem', cursor:'pointer', fontSize:'0.82rem', fontWeight:600 }}>{t.apply}</button>
-                    )}
-                  </div>
-                </div>
+        {/* Opportunities Section */}
+        {profile?.role === 'mentor' && (
+          <section style={{ marginBottom: '40px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)' }}>{t.myOpps}</h2>
+              <button onClick={() => router.push('/new-opportunity')} className="btn-primary" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>{t.addOpp}</button>
+            </div>
+            {opportunities.length === 0 ? (
+              <div className="glass" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📋</div>
+                <p>{t.noOpps}</p>
               </div>
-            ))}
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                {opportunities.map((opp) => (
+                  <div key={opp.id} className="glass card-hover" style={{ padding: '24px' }}>
+                    <h3 style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text)', marginBottom: '8px' }}>{opp.title}</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>{opp.description?.slice(0,100)}{opp.description?.length > 100 ? '...' : ''}</p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '20px' }}>⏱ {opp.duration}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '20px' }}>👥 {opp.spots} {t.spots}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Applications Section */}
+        {profile?.role === 'apprentice' && (
+          <section>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)', marginBottom: '20px' }}>{t.myApps}</h2>
+            {applications.length === 0 ? (
+              <div className="glass" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🎯</div>
+                <p>{t.noApps}</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {applications.map((app) => (
+                  <div key={app.id} className="glass card-hover" style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                    <div>
+                      <h3 style={{ fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>{app.opportunities?.title || 'Opportunity'}</h3>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(app.created_at).toLocaleDateString()}</p>
+                    </div>
+                    {statusBadge(app.status)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Browse opportunities for apprentices */}
+        {profile?.role === 'apprentice' && (
+          <div style={{ marginTop: '32px', textAlign: 'center' }}>
+            <button onClick={() => router.push('/opportunities')} className="btn-primary">{lang === 'he' ? 'עיין בהזדמנויות' : 'Browse Opportunities'}</button>
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }
