@@ -11,7 +11,6 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
-
   const [formData, setFormData] = useState({
     fullName: '',
     contact: '',
@@ -54,7 +53,7 @@ export default function Signup() {
     try {
       const isEmail = formData.contact.includes('@');
       const authEmail = isEmail ? formData.contact : `${formData.contact}@skilllink.phone`;
-
+      
       if (mode === 'login') {
         const { error: loginError } = await supabase.auth.signInWithPassword({
           email: authEmail,
@@ -98,7 +97,7 @@ export default function Signup() {
         .upsert([{
           id: userId,
           full_name: formData.fullName,
-          role: role,
+          role: role || 'student', // FIXED: Added fallback to avoid null constraint
           city: formData.area,
           profession: role === 'mentor' ? formData.specialties.join(', ') : null,
           bio: formData.bio,
@@ -149,11 +148,9 @@ export default function Signup() {
         <button onClick={handleAuthAction} disabled={loading} style={{ padding: '22px', fontSize: '1.4rem', fontWeight: 800, borderRadius: '50px', border: 'none', background: '#e6b800', color: '#000', cursor: 'pointer', marginTop: '20px' }}>
           {loading ? 'טוען...' : (mode === 'login' ? 'התחבר' : 'המשך')}
         </button>
-
         <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }} style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}>
           {mode === 'login' ? 'אין לך חשבון? צור אחד עכשיו' : 'כבר רשום? התחבר כאן'}
         </button>
-
         <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', color: '#666', marginTop: '10px' }}>חזור אחורה</button>
       </div>
     </div>
@@ -167,7 +164,6 @@ export default function Signup() {
           <option value="">בחר אזור פעילות</option>
           {areas.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
-
         <div>
           <label style={{ fontWeight: 800, display: 'block', marginBottom: '15px' }}>{role === 'mentor' ? 'תחומי התמחות:' : 'תחומי עניין:'}</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
@@ -176,7 +172,6 @@ export default function Signup() {
             ))}
           </div>
         </div>
-
         {role === 'mentor' ? (
           <>
             <select value={formData.experience} onChange={e => setFormData({ ...formData, experience: e.target.value })} style={{ width: '100%', padding: '18px', borderRadius: '15px', border: '2px solid #eee', fontSize: '1.1rem' }}>
@@ -191,13 +186,11 @@ export default function Signup() {
             {goals.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
         )}
-
         {error && <p style={{ color: 'red', textAlign: 'center', background: '#fff0f0', padding: '10px', borderRadius: '10px' }}>{error}</p>}
         
         <button onClick={handleProfileFinish} disabled={loading} style={{ padding: '22px', fontSize: '1.4rem', fontWeight: 800, borderRadius: '50px', border: 'none', background: '#e6b800', color: '#000', cursor: 'pointer', marginTop: '20px' }}>
           {loading ? 'מעדכן...' : 'סיום והרשמה'}
         </button>
-
         <button onClick={() => setStep(2)} style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600, textAlign: 'center' }}>חזור לשלב הקודם</button>
       </div>
     </div>
