@@ -11,8 +11,8 @@ export default function Login() {
   const [lang, setLang] = useState<'he'|'en'>('he')
 
   const t = {
-    he: { title: 'SkillLink', sub: 'הפלטפורמה לחניכה מקצועית', email: 'אימייל', password: 'סיסמא', login: 'כניסה', noAccount: 'אין קונטו?', register: 'הצטרף ל-SkillLink', loading: 'התחברות...' },
-    en: { title: 'SkillLink', sub: 'Professional apprenticeship platform', email: 'Email', password: 'Password', login: 'Sign In', noAccount: "Don't have an account?", register: 'Join SkillLink', loading: 'Signing in...' }
+    he: { title: 'SkillLink', sub: 'הפלטפורמה לחניכות מקצועית', email: 'אימייל', password: 'סיסמא', login: 'כניסה', signup: 'הרשמה', noAccount: 'אין לך חשבון?', loading: 'מתחבר...', emailPh: 'הזן אימייל', passPh: 'הזן סיסמא' },
+    en: { title: 'SkillLink', sub: 'Professional apprenticeship platform', email: 'Email', password: 'Password', login: 'Sign In', signup: 'Sign Up', noAccount: "Don't have an account?", loading: 'Connecting...', emailPh: 'Enter your email', passPh: 'Enter your password' }
   }[lang]
 
   const handleLogin = async () => {
@@ -22,42 +22,62 @@ export default function Login() {
     else router.push('/dashboard')
   }
 
-  const inputStyle: React.CSSProperties = { width:'100%', padding:'0.8rem 1rem', border:'1.5px solid #e0e0e0', borderRadius:10, fontSize:'0.95rem', outline:'none', transition:'border-color 0.2s', fontFamily:"'Segoe UI', Arial, sans-serif", boxSizing:'border-box' }
-
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#f8f9fb 0%,#eef0ff 100%)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Segoe UI', Arial, sans-serif" }}>
-      <div style={{ position:'absolute', top:20, right:24 }}>
-        <button onClick={() => setLang(lang==='he'?'en':'he')} style={{ background:'white', border:'1px solid #ddd', borderRadius:20, padding:'0.3rem 0.9rem', cursor:'pointer', fontSize:'0.8rem', color:'#555', boxShadow:'0 1px 4px rgba(0,0,0,0.07)' }}>{lang==='he'?'EN':'HE'}</button>
+    <div dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: lang === 'he' ? "'Heebo', sans-serif" : "'Inter', sans-serif", position: 'relative', overflow: 'hidden' }}>
+      <div className="bg-orb bg-orb-1" />
+      <div className="bg-orb bg-orb-2" />
+
+      <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10 }}>
+        <button onClick={() => setLang(lang === 'he' ? 'en' : 'he')} style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer' }}>🌐 {lang === 'he' ? 'EN' : 'HE'}</button>
       </div>
-      <div style={{ background:'white', borderRadius:20, padding:'2.5rem 2.5rem', width:'100%', maxWidth:420, boxShadow:'0 8px 40px rgba(108,99,255,0.12)', direction: lang==='he'?'rtl':'ltr' }}>
-        {/* LOGO */}
-        <div style={{ textAlign:'center', marginBottom:'2rem' }}>
-          <div style={{ fontSize:'2.2rem', fontWeight:900, background:'linear-gradient(135deg,#6c63ff,#3ecfcf)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:'0.3rem' }}>SkillLink</div>
-          <p style={{ color:'#888', fontSize:'0.88rem', margin:0 }}>{t.sub}</p>
+
+      <div className="glass animate-fadeIn" style={{ width: '100%', maxWidth: '420px', padding: '48px 40px', position: 'relative', zIndex: 2 }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.8rem', color: 'white', margin: '0 auto 16px', boxShadow: 'var(--shadow)' }}>S</div>
+          <h1 style={{ fontSize: '2rem', fontWeight: 900, background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>{t.title}</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.sub}</p>
         </div>
 
-        {/* FORM */}
-        <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
+        {/* Form */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ fontSize:'0.82rem', fontWeight:600, color:'#444', display:'block', marginBottom:'0.4rem' }}>{t.email}</label>
-            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="you@example.com" style={inputStyle} onFocus={e => e.target.style.borderColor='#6c63ff'} onBlur={e => e.target.style.borderColor='#e0e0e0'} />
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>{t.email}</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder={t.emailPh}
+              className="form-input"
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            />
           </div>
           <div>
-            <label style={{ fontSize:'0.82rem', fontWeight:600, color:'#444', display:'block', marginBottom:'0.4rem' }}>{t.password}</label>
-            <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="••••••••" style={inputStyle} onFocus={e => e.target.style.borderColor='#6c63ff'} onBlur={e => e.target.style.borderColor='#e0e0e0'} onKeyDown={e => e.key==='Enter' && handleLogin()} />
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>{t.password}</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder={t.passPh}
+              className="form-input"
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            />
           </div>
 
           {error && (
-            <div style={{ background:'#fff0f0', border:'1px solid #ffcdd2', borderRadius:8, padding:'0.6rem 0.8rem', fontSize:'0.83rem', color:'#c62828' }}>{error}</div>
+            <div style={{ background: 'rgba(255,101,132,0.1)', border: '1px solid rgba(255,101,132,0.3)', borderRadius: '8px', padding: '12px 16px', color: '#FF6584', fontSize: '0.85rem' }}>
+              {error}
+            </div>
           )}
 
-          <button onClick={handleLogin} disabled={loading} style={{ background: loading?'#ccc':'linear-gradient(135deg,#6c63ff,#3ecfcf)', color:'white', border:'none', borderRadius:10, padding:'0.85rem', fontSize:'1rem', fontWeight:700, cursor: loading?'default':'pointer', boxShadow: loading?'none':'0 4px 14px rgba(108,99,255,0.35)', transition:'all 0.2s', marginTop:'0.5rem' }}>
-            {loading ? t.loading : t.login}
+          <button onClick={handleLogin} disabled={loading} className="btn-primary" style={{ width: '100%', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
+            {loading ? <><span className="spinner" />{t.loading}</> : t.login}
           </button>
         </div>
 
-        <div style={{ textAlign:'center', marginTop:'1.5rem', fontSize:'0.87rem', color:'#888' }}>
-          {t.noAccount} <a href="/signup" style={{ color:'#6c63ff', fontWeight:700, textDecoration:'none' }}>{t.register}</a>
+        <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          {t.noAccount}{' '}
+          <a href="/signup" style={{ color: 'var(--primary-light)', fontWeight: 600 }}>{t.signup}</a>
         </div>
       </div>
     </div>
