@@ -30,8 +30,7 @@ export default function Feed() {
       .from('posts')
       .select(`
         *,
-        profiles:author_id(id, full_name, profession, avatar_url)
-      `)
+        *      `)
       .order('created_at', { ascending: false })
     
     if (!error && data) {
