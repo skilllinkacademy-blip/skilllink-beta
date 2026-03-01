@@ -64,28 +64,39 @@ export default function Profile() {
   const saveProfile = async () => {
     if (!formData.full_name || !formData.role) { alert('נא למלא שם ותפקיד'); return }
     setSaving(true)
+    
     const payload: any = {
       id: user.id,
       full_name: formData.full_name,
-      phone: formData.phone,
-      city: formData.city,
-      avatar_url: formData.avatar_url,
+      phone: formData.phone || null,
+      city: formData.city || null,
+      avatar_url: formData.avatar_url || null,
       role: formData.role,
-      profession: formData.profession,
-      bio: formData.bio,
-      updated_at: new Date()
+      profession: formData.profession || null,
+      bio: formData.bio || null,
+      updated_at: new Date().toISOString()
     }
+
     if (formData.role === 'mentor') {
       payload.years_experience = parseInt(formData.years_experience) || null
       payload.hourly_rate = parseInt(formData.hourly_rate) || null
       payload.availability = formData.availability.join(',')
       payload.expertise = formData.expertise
     } else {
-      payload.learning_goals = formData.learning_goals
-      payload.current_level = formData.current_level
+      payload.learning_goals = formData.learning_goals || null
+      payload.current_level = formData.current_level || null
     }
-    const { error } = await supabase.from('profiles').upsert(payload)
-    if (!error) { router.push('/feed') } else { alert('שגיאה: ' + error.message) }
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
+
+    if (!error) { 
+      alert('פרופיל עודכן בהצלחה!')
+      router.push('/feed') 
+    } else { 
+      alert('שגיאה בשמירה: ' + error.message) 
+    }
     setSaving(false)
   }
 
