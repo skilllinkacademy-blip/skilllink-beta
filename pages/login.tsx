@@ -4,81 +4,95 @@ import { useRouter } from 'next/router'
 
 export default function Login() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const [contact, setContact] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [lang, setLang] = useState<'he'|'en'>('he')
+  const [error, setError] = useState('')
 
-  const t = {
-    he: { title: 'SkillLink', sub: 'הפלטפורמה לחניכות מקצועית', email: 'אימייל', password: 'סיסמא', login: 'כניסה', signup: 'הרשמה', noAccount: 'אין לך חשבון?', loading: 'מתחבר...', emailPh: 'הזן אימייל', passPh: 'הזן סיסמא' },
-    en: { title: 'SkillLink', sub: 'Professional apprenticeship platform', email: 'Email', password: 'Password', login: 'Sign In', signup: 'Sign Up', noAccount: "Don't have an account?", loading: 'Connecting...', emailPh: 'Enter your email', passPh: 'Enter your password' }
-  }[lang]
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
-  const handleLogin = async () => {
-    setLoading(true); setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setError(error.message); setLoading(false) }
-    else router.push('/dashboard')
+    const isEmail = contact.includes('@')
+    const authEmail = isEmail ? contact : `${contact}@skilllink.phone`
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authEmail,
+      password,
+    })
+
+    if (error) {
+      setError('פרטי התחברות שגויים. נסה שוב.')
+      setLoading(false)
+    } else {
+      router.push('/feed')
+    }
   }
 
   return (
-    <div dir={lang === 'he' ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: lang === 'he' ? "'Heebo', sans-serif" : "'Inter', sans-serif", position: 'relative', overflow: 'hidden' }}>
-      <div className="bg-orb bg-orb-1" />
-      <div className="bg-orb bg-orb-2" />
+    <div style={{
+      minHeight: '100vh',
+      background: '#ffffff',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: '"Segoe UI", system-ui, sans-serif',
+      direction: 'rtl',
+      padding: '20px'
+    }}>
+      <div style={{ width: '100%', maxWidth: '400px' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '10px', textAlign: 'center' }}>SkillLink</h1>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '30px', textAlign: 'center' }}>התחברות למערכת</h2>
 
-      <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10 }}>
-        <button onClick={() => setLang(lang === 'he' ? 'en' : 'he')} style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer' }}>🌐 {lang === 'he' ? 'EN' : 'HE'}</button>
-      </div>
+        {error && <div style={{ background: '#fff0f0', color: '#d32f2f', padding: '12px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #ffcdd2' }}>{error}</div>}
 
-      <div className="glass animate-fadeIn" style={{ width: '100%', maxWidth: '420px', padding: '48px 40px', position: 'relative', zIndex: 2 }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.8rem', color: 'white', margin: '0 auto 16px', boxShadow: 'var(--shadow)' }}>S</div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 900, background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>{t.title}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.sub}</p>
-        </div>
-
-        {/* Form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>{t.email}</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder={t.emailPh}
-              className="form-input"
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>{t.password}</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder={t.passPh}
-              className="form-input"
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            />
-          </div>
-
-          {error && (
-            <div style={{ background: 'rgba(255,101,132,0.1)', border: '1px solid rgba(255,101,132,0.3)', borderRadius: '8px', padding: '12px 16px', color: '#FF6584', fontSize: '0.85rem' }}>
-              {error}
-            </div>
-          )}
-
-          <button onClick={handleLogin} disabled={loading} className="btn-primary" style={{ width: '100%', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
-            {loading ? <><span className="spinner" />{t.loading}</> : t.login}
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <input
+            required
+            placeholder="מייל / טלפון"
+            value={contact}
+            onChange={e => setContact(e.target.value)}
+            style={{ padding: '16px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '1rem' }}
+          />
+          <input
+            required
+            type="password"
+            placeholder="סיסמה"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={{ padding: '16px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '1rem' }}
+          />
+          
+          <button
+            disabled={loading}
+            type="submit"
+            style={{
+              padding: '18px',
+              background: '#000',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '50px',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              marginTop: '10px'
+            }}
+          >
+            {loading ? 'מתחבר...' : 'התחבר'}
           </button>
-        </div>
+        </form>
 
-        <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          {t.noAccount}{' '}
-          <a href="/signup" style={{ color: 'var(--primary-light)', fontWeight: 600 }}>{t.signup}</a>
-        </div>
+        <p style={{ marginTop: '30px', textAlign: 'center', color: '#666' }}>
+          אין לך חשבון?{' '}
+          <span
+            onClick={() => router.push('/')}
+            style={{ color: '#000', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            הירשם עכשיו
+          </span>
+        </p>
       </div>
     </div>
   )
