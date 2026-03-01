@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 import { useRouter } from 'next/router';
 
 export default function Signup() {
@@ -29,11 +29,12 @@ export default function Signup() {
   const goals = ['למצוא עבודה', 'למצוא חניכה / ללמוד', 'להכיר אנשי מקצוע', 'לשתף ידע'];
 
   useEffect(() => {
-    if (initialMode === 'login') setMode('login');
+    if (initialMode === 'login') {
+      setMode('login');
+      setStep(2);
+    }
     if (initialRole) {
       setRole(initialRole as string);
-      setStep(2);
-    } else if (initialMode === 'login') {
       setStep(2);
     }
   }, [initialMode, initialRole]);
