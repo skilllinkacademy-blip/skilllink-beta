@@ -11,7 +11,7 @@ type ProfileRow = {
   avatar_url?: string | null;
   profession?: string | null;
   role?: string | null;
-  category?: string | null; // אם קיים אצלך בעתיד
+  category?: string | null; // אם תוסיף בעתיד
   created_at?: string | null;
 };
 
@@ -23,40 +23,43 @@ type Mentor = {
   category: CategoryKey | null;
 };
 
-const CAT_LIST: { key: CategoryKey; subtitle: string }[] = [
-  { key: "חשמל", subtitle: "תיקונים, התקנות, תשתיות" },
-  { key: "אינסטלציה", subtitle: "דליפות, קווים, פתיחת סתימות" },
-  { key: "מיזוג אוויר", subtitle: "התקנה, ניקוי, תחזוקה" },
-  { key: "נגרות", subtitle: "מטבחים, דלתות, עבודות עץ" },
+const CAT_LIST: {
+  key: CategoryKey;
+  subtitle: string;
+  tint: string; // css var color
+}[] = [
+  { key: "חשמל", subtitle: "תיקונים, התקנות, תשתיות", tint: "#F59E0B" },
+  { key: "אינסטלציה", subtitle: "דליפות, קווים, פתיחת סתימות", tint: "#06B6D4" },
+  { key: "מיזוג אוויר", subtitle: "התקנה, ניקוי, תחזוקה", tint: "#3B82F6" },
+  { key: "נגרות", subtitle: "מטבחים, דלתות, עבודות עץ", tint: "#10B981" },
 ];
 
-function BellIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path
-        d="M12 22a2.2 2.2 0 0 0 2.2-2.2H9.8A2.2 2.2 0 0 0 12 22Z"
-        fill="currentColor"
-        opacity="0.18"
-      />
-      <path
-        d="M18 9a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M13.7 19.8c-.3 1-1 2.2-1.7 2.2s-1.4-1.2-1.7-2.2"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+function safeName(x?: string | null) {
+  const s = (x || "").trim();
+  return s || "אורח";
+}
+
+function avatarFallback(name: string) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    name
+  )}&background=111827&color=fff&bold=true&size=256`;
+}
+
+function inferCategory(row: ProfileRow): CategoryKey | null {
+  const c = (row.category || "").trim();
+  if (c === "חשמל" || c === "אינסטלציה" || c === "מיזוג אוויר" || c === "נגרות") return c;
+
+  const p = (row.profession || "").toLowerCase();
+  if (p.includes("חשמל") || p.includes("חשמלא")) return "חשמל";
+  if (p.includes("אינסטל") || p.includes("שרברב") || p.includes("אינסטלט")) return "אינסטלציה";
+  if (p.includes("מיזוג") || p.includes("מזגן") || p.includes("hvac")) return "מיזוג אוויר";
+  if (p.includes("נגר")) return "נגרות";
+  return null;
 }
 
 function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
       <path
         d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
         stroke="currentColor"
@@ -72,15 +75,33 @@ function SearchIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function BellModernIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M18 8.9a6 6 0 1 0-12 0c0 6.6-3 6.6-3 6.6h18s-3 0-3-6.6Z"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.9 19.7c.35 1.25 1.15 2.3 2.1 2.3s1.75-1.05 2.1-2.3"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function CatIcon({ k, className }: { k: CategoryKey; className?: string }) {
-  const common = { className };
   if (k === "חשמל")
     return (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...common}>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
         <path
           d="M13 2 3 14h7l-1 8 12-14h-7l-1-6Z"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="1.9"
           strokeLinejoin="round"
         />
       </svg>
@@ -88,20 +109,15 @@ function CatIcon({ k, className }: { k: CategoryKey; className?: string }) {
 
   if (k === "אינסטלציה")
     return (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...common}>
-        <path d="M6 10h12v3H6v-3Z" stroke="currentColor" strokeWidth="1.8" />
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+        <path d="M6 10h12v3H6v-3Z" stroke="currentColor" strokeWidth="1.9" />
         <path
           d="M9 10V7.8A2.3 2.3 0 0 1 11.3 5.5h1.4A2.3 2.3 0 0 1 15 7.8V10"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="1.9"
           strokeLinecap="round"
         />
-        <path
-          d="M12 13v6"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
+        <path d="M12 13v6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
         <path
           d="M10.7 19.3c.55 1.05 2.05 1.05 2.6 0 .45-.85-.2-1.75-1.3-3.2-1.1 1.45-1.75 2.35-1.3 3.2Z"
           fill="currentColor"
@@ -112,60 +128,32 @@ function CatIcon({ k, className }: { k: CategoryKey; className?: string }) {
 
   if (k === "מיזוג אוויר")
     return (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...common}>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
         <path
           d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v3A2.5 2.5 0 0 1 16.5 13h-9A2.5 2.5 0 0 1 5 10.5v-3Z"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="1.9"
         />
         <path
           d="M7 16c1.5 0 1.5 2 3 2s1.5-2 3-2 1.5 2 3 2 1.5-2 3-2"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="1.9"
           strokeLinecap="round"
         />
       </svg>
     );
 
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...common}>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="m14 4 6 6-9 9H5v-6l9-9Z"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="1.9"
         strokeLinejoin="round"
       />
-      <path
-        d="M10 8l6 6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M10 8l6 6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
     </svg>
   );
-}
-
-function safeName(x?: string | null) {
-  const s = (x || "").trim();
-  return s || "אורח";
-}
-
-function avatarFallback(name: string) {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    name
-  )}&background=1877F2&color=fff&bold=true&size=256`;
-}
-
-function inferCategory(row: ProfileRow): CategoryKey | null {
-  const c = (row.category || "").trim();
-  if (c === "חשמל" || c === "אינסטלציה" || c === "מיזוג אוויר" || c === "נגרות") return c;
-
-  const p = (row.profession || "").toLowerCase();
-  if (p.includes("חשמל") || p.includes("חשמלא")) return "חשמל";
-  if (p.includes("אינסטל") || p.includes("שרברב") || p.includes("אינסטלט")) return "אינסטלציה";
-  if (p.includes("מיזוג") || p.includes("מזגן") || p.includes("hvac")) return "מיזוג אוויר";
-  if (p.includes("נגר")) return "נגרות";
-  return null;
 }
 
 export default function Feed() {
@@ -252,9 +240,11 @@ export default function Feed() {
           <div className="brand">SkillLink</div>
 
           <div className="search" role="search">
-            <SearchIcon className="sIc" />
+            <span className="searchIcon" aria-hidden>
+              <SearchIcon className="ic" />
+            </span>
             <input
-              className="sIn"
+              className="searchInput"
               placeholder="חפש מנטור, מקצוע או מיקום..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -262,8 +252,8 @@ export default function Feed() {
           </div>
 
           <div className="user">
-            <button className="iconBtn" aria-label="התראות">
-              <BellIcon className="bell" />
+            <button className="iconGhost" aria-label="התראות">
+              <BellModernIcon className="bell" />
             </button>
             <div className="uName">{safeName(viewer?.full_name)}</div>
             <img
@@ -278,14 +268,12 @@ export default function Feed() {
       <div className="shell">
         <section className="main">
           <section className="hero">
-            <div className="heroBg" />
+            <div className="heroGlow" />
             <div className="heroIn">
               <h1 className="heroT">
                 ברוכים הבאים{viewer?.full_name ? `, ${safeName(viewer.full_name)}` : ""}!
               </h1>
-              <p className="heroS">
-                עיצוב מודרני בסגנון Meta + נתונים שמסתנכרנים מהמערכת בזמן אמת.
-              </p>
+              <p className="heroS">ממשק חדשני + נתונים שמסתנכרנים מהמערכת.</p>
             </div>
           </section>
 
@@ -293,7 +281,7 @@ export default function Feed() {
             {CAT_LIST.map((c) => {
               const n = counts[c.key];
               return (
-                <div key={c.key} className="cat">
+                <div key={c.key} className="cat" style={{ ["--tint" as any]: c.tint }}>
                   <div className="catTop">
                     <div className="catIcon">
                       <CatIcon k={c.key} className="catSvg" />
@@ -359,34 +347,6 @@ export default function Feed() {
       </div>
 
       <style jsx>{`
-        /* Fix: לנטרל CSS גלובלי שיכול “לפוצץ” SVG */
-        :global(.sl svg) {
-          width: auto;
-          height: auto;
-          max-width: none;
-          max-height: none;
-        }
-
-        .sIc {
-          width: 18px !important;
-          height: 18px !important;
-          flex: 0 0 18px;
-          color: #6b7280;
-          display: block;
-        }
-        .bell {
-          width: 20px !important;
-          height: 20px !important;
-          color: #111827;
-          display: block;
-        }
-        .catSvg {
-          width: 28px !important;
-          height: 28px !important;
-          color: #111827;
-          display: block;
-        }
-
         .sl {
           min-height: 100vh;
           background: #f0f2f5;
@@ -394,12 +354,13 @@ export default function Feed() {
           font-family: "Heebo", "Inter", system-ui, -apple-system, Segoe UI, sans-serif;
         }
 
+        /* Top bar */
         .top {
           position: sticky;
           top: 0;
           z-index: 50;
           background: rgba(255, 255, 255, 0.92);
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(17, 24, 39, 0.1);
         }
 
@@ -414,39 +375,61 @@ export default function Feed() {
         }
 
         .brand {
-          font-weight: 900;
+          font-weight: 950;
           font-size: 26px;
           letter-spacing: -0.6px;
-          color: #111827;
         }
 
+        /* Search (נעול גודל) */
         .search {
+          position: relative;
+          height: 44px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: 1px solid rgba(17, 24, 39, 0.14);
+          box-shadow: 0 10px 26px rgba(17, 24, 39, 0.06);
           display: flex;
           align-items: center;
-          gap: 10px;
-          background: #fff;
-          border: 1px solid rgba(17, 24, 39, 0.14);
-          border-radius: 999px;
-          padding: 10px 12px;
-          box-shadow: 0 10px 26px rgba(17, 24, 39, 0.06);
         }
 
         .search:focus-within {
+          border-color: rgba(24, 119, 242, 0.35);
           box-shadow: 0 0 0 4px rgba(24, 119, 242, 0.18),
             0 10px 26px rgba(17, 24, 39, 0.06);
-          border-color: rgba(24, 119, 242, 0.35);
         }
 
-        .sIn {
+        .searchIcon {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 18px;
+          height: 18px;
+          display: grid;
+          place-items: center;
+          color: #6b7280;
+          pointer-events: none;
+        }
+
+        .ic {
+          width: 18px !important;
+          height: 18px !important;
+          display: block;
+        }
+
+        .searchInput {
           width: 100%;
+          height: 44px;
+          padding: 0 44px 0 14px; /* מקום לאייקון בימין */
           border: 0;
           outline: 0;
           background: transparent;
-          font-weight: 700;
+          font-weight: 750;
           font-size: 14px;
           color: #111827;
         }
 
+        /* User */
         .user {
           display: flex;
           align-items: center;
@@ -455,8 +438,7 @@ export default function Feed() {
         }
 
         .uName {
-          font-weight: 800;
-          color: #111827;
+          font-weight: 850;
         }
 
         .ava {
@@ -467,17 +449,27 @@ export default function Feed() {
           border: 1px solid rgba(17, 24, 39, 0.12);
         }
 
-        .iconBtn {
+        /* Bell (מודרני, לא עיגול כבד) */
+        .iconGhost {
           width: 40px;
           height: 40px;
           border-radius: 999px;
-          background: #fff;
-          border: 1px solid rgba(17, 24, 39, 0.12);
-          box-shadow: 0 10px 24px rgba(17, 24, 39, 0.06);
+          background: transparent;
+          border: 0;
           display: grid;
           place-items: center;
         }
+        .iconGhost:hover {
+          background: rgba(17, 24, 39, 0.06);
+        }
+        .bell {
+          width: 20px !important;
+          height: 20px !important;
+          color: #111827;
+          display: block;
+        }
 
+        /* Layout */
         .shell {
           max-width: 1200px;
           margin: 0 auto;
@@ -488,6 +480,7 @@ export default function Feed() {
           align-items: start;
         }
 
+        /* Hero */
         .hero {
           position: relative;
           border-radius: 18px;
@@ -497,7 +490,7 @@ export default function Feed() {
           overflow: hidden;
         }
 
-        .heroBg {
+        .heroGlow {
           position: absolute;
           inset: 0;
           background: radial-gradient(
@@ -505,13 +498,9 @@ export default function Feed() {
               rgba(24, 119, 242, 0.18) 0,
               transparent 40%
             ),
-            radial-gradient(
-              circle at 70% 40%,
-              rgba(17, 24, 39, 0.06) 0,
-              transparent 45%
-            ),
-            linear-gradient(180deg, #fff, #fff);
-          opacity: 0.9;
+            radial-gradient(circle at 75% 45%, rgba(0, 0, 0, 0.06) 0, transparent 45%),
+            linear-gradient(180deg, #ffffff, #ffffff);
+          opacity: 0.95;
         }
 
         .heroIn {
@@ -534,6 +523,7 @@ export default function Feed() {
           font-weight: 650;
         }
 
+        /* Categories */
         .cats {
           margin-top: 14px;
           display: grid;
@@ -559,12 +549,19 @@ export default function Feed() {
         .catIcon {
           width: 54px;
           height: 54px;
-          border-radius: 14px;
-          background: rgba(24, 119, 242, 0.08);
-          border: 1px solid rgba(24, 119, 242, 0.16);
+          border-radius: 16px;
+          background: color-mix(in srgb, var(--tint), white 88%);
+          border: 1px solid color-mix(in srgb, var(--tint), white 72%);
           display: grid;
           place-items: center;
           flex: 0 0 auto;
+        }
+
+        .catSvg {
+          width: 28px !important;
+          height: 28px !important;
+          color: #111827;
+          display: block;
         }
 
         .catMeta {
@@ -586,6 +583,7 @@ export default function Feed() {
           color: rgba(17, 24, 39, 0.65);
         }
 
+        /* Mentors */
         .secHead {
           margin-top: 18px;
           display: flex;
@@ -675,6 +673,7 @@ export default function Feed() {
           text-align: center;
         }
 
+        /* Side */
         .side {
           display: flex;
           flex-direction: column;
@@ -699,7 +698,7 @@ export default function Feed() {
           font-weight: 700;
         }
 
-        /* loading skeleton */
+        /* Loading skeleton */
         .skImg {
           height: 150px;
           background: #e5e7eb;
