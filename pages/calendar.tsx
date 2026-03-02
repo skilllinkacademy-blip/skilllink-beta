@@ -24,6 +24,7 @@ type MentorTerms = {
   years_in_trade: number | null;
   day_rate: number | null;
   hourly_rate: number | null;
+  working_hours: string | null; // ✅ תיקון: היה חסר בטיפוס
   work_includes: string | null;
   work_description: string | null;
   teaching_commitment: boolean | null;
@@ -61,11 +62,30 @@ export default function CalendarPage() {
     { av: AvRow; profile?: ProfileRow; terms?: MentorTerms }[]
   >([]);
 
-  const months = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
-  const daysOfWeek = ["א","ב","ג","ד","ה","ו","ש"];
+  const months = [
+    "ינואר",
+    "פברואר",
+    "מרץ",
+    "אפריל",
+    "מאי",
+    "יוני",
+    "יולי",
+    "אוגוסט",
+    "ספטמבר",
+    "אוקטובר",
+    "נובמבר",
+    "דצמבר",
+  ];
+  const daysOfWeek = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
 
-  const daysInMonth = useMemo(() => endOfMonth(currentMonth, currentYear).getDate(), [currentMonth, currentYear]);
-  const firstDay = useMemo(() => startOfMonth(currentMonth, currentYear).getDay(), [currentMonth, currentYear]);
+  const daysInMonth = useMemo(
+    () => endOfMonth(currentMonth, currentYear).getDate(),
+    [currentMonth, currentYear]
+  );
+  const firstDay = useMemo(
+    () => startOfMonth(currentMonth, currentYear).getDay(),
+    [currentMonth, currentYear]
+  );
 
   const loadMonthCounts = async () => {
     setLoading(true);
@@ -122,15 +142,18 @@ export default function CalendarPage() {
         .in("id", mentorIds),
       supabase
         .from("mentor_terms")
-        .select("mentor_id, years_in_trade, day_rate, hourly_rate, work_includes, work_description, teaching_commitment, patience_commitment, teaching_included")
+        // ✅ תיקון: להוסיף working_hours גם ב-select
+        .select(
+          "mentor_id, years_in_trade, day_rate, hourly_rate, working_hours, work_includes, work_description, teaching_commitment, patience_commitment, teaching_included"
+        )
         .in("mentor_id", mentorIds),
     ]);
 
     const profMap = new Map<string, ProfileRow>();
-    (profs as any[] | null || []).forEach((p) => profMap.set(p.id, p));
+    ((profs as any[]) || []).forEach((p) => profMap.set(p.id, p));
 
     const termsMap = new Map<string, MentorTerms>();
-    (terms as any[] | null || []).forEach((t) => termsMap.set(t.mentor_id, t));
+    ((terms as any[]) || []).forEach((t) => termsMap.set(t.mentor_id, t));
 
     const combined = (av as AvRow[]).map((row) => ({
       av: row,
@@ -168,25 +191,81 @@ export default function CalendarPage() {
 
   return (
     <main dir="rtl" style={{ minHeight: "100vh", background: "#f4f6f8", padding: 18 }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 420px", gap: 14, alignItems: "start" }}>
-        <section style={{ background: "#fff", border: "1px solid rgba(0,0,0,.10)", borderRadius: 16, padding: 14 }}>
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          display: "grid",
+          gridTemplateColumns: "1fr 420px",
+          gap: 14,
+          alignItems: "start",
+        }}
+      >
+        <section
+          style={{
+            background: "#fff",
+            border: "1px solid rgba(0,0,0,.10)",
+            borderRadius: 16,
+            padding: 14,
+          }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div style={{ fontWeight: 950, fontSize: 16 }}>לוח זמינות</div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={prevMonth} style={{ borderRadius: 12, border: "1px solid rgba(0,0,0,.12)", padding: "10px 12px", background: "#fff", fontWeight: 900 }}>‹</button>
-              <button onClick={nextMonth} style={{ borderRadius: 12, border: "1px solid rgba(0,0,0,.12)", padding: "10px 12px", background: "#fff", fontWeight: 900 }}>›</button>
-              <button onClick={() => router.push("/feed")} style={{ borderRadius: 12, border: "1px solid rgba(0,0,0,.12)", padding: "10px 12px", background: "#fff", fontWeight: 900 }}>Feed</button>
+              <button
+                onClick={prevMonth}
+                style={{
+                  borderRadius: 12,
+                  border: "1px solid rgba(0,0,0,.12)",
+                  padding: "10px 12px",
+                  background: "#fff",
+                  fontWeight: 900,
+                }}
+              >
+                ‹
+              </button>
+              <button
+                onClick={nextMonth}
+                style={{
+                  borderRadius: 12,
+                  border: "1px solid rgba(0,0,0,.12)",
+                  padding: "10px 12px",
+                  background: "#fff",
+                  fontWeight: 900,
+                }}
+              >
+                ›
+              </button>
+              <button
+                onClick={() => router.push("/feed")}
+                style={{
+                  borderRadius: 12,
+                  border: "1px solid rgba(0,0,0,.12)",
+                  padding: "10px 12px",
+                  background: "#fff",
+                  fontWeight: 900,
+                }}
+              >
+                Feed
+              </button>
             </div>
           </div>
 
           <div style={{ marginTop: 10, fontWeight: 900, color: "rgba(0,0,0,.7)" }}>
             {months[currentMonth]} {currentYear}
-            {loading ? <span style={{ marginRight: 8, fontWeight: 800, color: "rgba(0,0,0,.5)" }}>· טוען...</span> : null}
+            {loading ? (
+              <span style={{ marginRight: 8, fontWeight: 800, color: "rgba(0,0,0,.5)" }}>· טוען...</span>
+            ) : null}
           </div>
 
           <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
             {daysOfWeek.map((d) => (
-              <div key={d} style={{ fontWeight: 900, color: "rgba(0,0,0,.55)", textAlign: "center" }}>{d}</div>
+              <div
+                key={d}
+                style={{ fontWeight: 900, color: "rgba(0,0,0,.55)", textAlign: "center" }}
+              >
+                {d}
+              </div>
             ))}
 
             {Array.from({ length: firstDay }).map((_, i) => (
@@ -217,10 +296,19 @@ export default function CalendarPage() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                     <div style={{ fontWeight: 950 }}>{day}</div>
-                    {isToday ? <div style={{ fontSize: 12, fontWeight: 950, color: "#1877f2" }}>היום</div> : null}
+                    {isToday ? (
+                      <div style={{ fontSize: 12, fontWeight: 950, color: "#1877f2" }}>היום</div>
+                    ) : null}
                   </div>
 
-                  <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, color: count ? "#0b1220" : "rgba(0,0,0,.45)" }}>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      fontWeight: 900,
+                      color: count ? "#0b1220" : "rgba(0,0,0,.45)",
+                    }}
+                  >
                     {count ? `${count} זמינים` : "אין זמינות"}
                   </div>
                 </button>
@@ -229,56 +317,44 @@ export default function CalendarPage() {
           </div>
         </section>
 
-        <aside style={{ background: "#fff", border: "1px solid rgba(0,0,0,.10)", borderRadius: 16, padding: 14 }}>
+        <aside
+          style={{
+            background: "#fff",
+            border: "1px solid rgba(0,0,0,.10)",
+            borderRadius: 16,
+            padding: 14,
+          }}
+        >
           <div style={{ fontWeight: 950, fontSize: 16 }}>זמינים בתאריך</div>
           <div style={{ marginTop: 6, fontWeight: 900, color: "rgba(0,0,0,.65)" }}>{selectedDate}</div>
 
           {dayLoading ? (
             <div style={{ marginTop: 12, fontWeight: 800 }}>טוען...</div>
           ) : dayRows.length === 0 ? (
-            <div style={{ marginTop: 12, fontWeight: 850, color: "rgba(0,0,0,.65)" }}>אין בעלי מקצוע זמינים ביום הזה.</div>
+            <div style={{ marginTop: 12, fontWeight: 850, color: "rgba(0,0,0,.65)" }}>
+              אין בעלי מקצוע זמינים ביום הזה.
+            </div>
           ) : (
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {dayRows.map(({ av, profile, terms }) => (
-                <div key={av.id} style={{ border: "1px solid rgba(0,0,0,.10)", borderRadius: 14, padding: 12 }}>
+                <div
+                  key={av.id}
+                  style={{
+                    border: "1px solid rgba(0,0,0,.10)",
+                    borderRadius: 14,
+                    padding: 12,
+                  }}
+                >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                       <img
-                        src={(profile?.avatar_url || "").trim() || "https://ui-avatars.com/api/?name=Mentor&background=111827&color=fff&bold=true&size=128"}
+                        src={
+                          (profile?.avatar_url || "").trim() ||
+                          "https://ui-avatars.com/api/?name=Mentor&background=111827&color=fff&bold=true&size=128"
+                        }
                         alt="avatar"
                         style={{ width: 36, height: 36, borderRadius: 999, objectFit: "cover" }}
                       />
                       <div>
                         <div style={{ fontWeight: 950 }}>{profile?.full_name || av.mentor_id}</div>
-                        <div style={{ fontSize: 12, fontWeight: 850, color: "rgba(0,0,0,.65)" }}>
-                          {(profile?.profession || "").trim() || "בעל מקצוע"}{profile?.city ? ` · ${profile.city}` : ""}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ fontWeight: 950 }}>
-                      {av.start_time.slice(0,5)}–{av.end_time.slice(0,5)}
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 10, display: "grid", gap: 6, fontSize: 12, fontWeight: 850, color: "rgba(0,0,0,.70)" }}>
-                    {terms?.day_rate != null ? <div>שכר ליום: ₪{terms.day_rate}</div> : null}
-                    {terms?.hourly_rate != null ? <div>שכר לשעה: ₪{terms.hourly_rate}</div> : null}
-                    {terms?.years_in_trade != null ? <div>שנות ניסיון: {terms.years_in_trade}</div> : null}
-                    {terms?.working_hours ? <div>שעות עבודה: {terms.working_hours}</div> : null}
-                    {terms?.teaching_included != null ? <div>לימוד כלול: {terms.teaching_included ? "כן" : "לא"}</div> : null}
-                    {terms?.teaching_commitment != null ? <div>התחייבות ללמד: {terms.teaching_commitment ? "כן" : "לא"}</div> : null}
-                    {terms?.patience_commitment != null ? <div>סבלנות לתלמיד מתחיל: {terms.patience_commitment ? "כן" : "לא"}</div> : null}
-                    {terms?.work_includes ? <div>כולל: {terms.work_includes}</div> : null}
-                    {terms?.work_description ? <div>מה ילמד: {terms.work_description}</div> : null}
-                    {av.notes ? <div>הערות: {av.notes}</div> : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </aside>
-      </div>
-    </main>
-  );
-}
+                        <div
