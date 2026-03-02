@@ -1,117 +1,284 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
-import { useRouter } from 'next/router'
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { useRouter } from "next/router";
 
-export default function Calendar() {
-  const router = useRouter()
-  const [profile, setProfile] = useState<any>(null)
-  const [sessions, setSessions] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+type AvRow = {
+  id: number;
+  mentor_id: string;
+  date: string; // YYYY-MM-DD
+  start_time: string;
+  end_time: string;
+  notes: string | null;
+};
+
+type ProfileRow = {
+  id: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  profession?: string | null;
+  city?: string | null;
+};
+
+type MentorTerms = {
+  mentor_id: string;
+  years_in_trade: number | null;
+  day_rate: number | null;
+  hourly_rate: number | null;
+  work_includes: string | null;
+  work_description: string | null;
+  teaching_commitment: boolean | null;
+  patience_commitment: boolean | null;
+  teaching_included: boolean | null;
+};
+
+function isoDate(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function startOfMonth(month: number, year: number) {
+  return new Date(year, month, 1);
+}
+function endOfMonth(month: number, year: number) {
+  return new Date(year, month + 1, 0);
+}
+
+export default function CalendarPage() {
+  const router = useRouter();
+  const today = new Date();
+
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+
+  const [loading, setLoading] = useState(true);
+  const [countsByDate, setCountsByDate] = useState<Record<string, number>>({});
+  const [selectedDate, setSelectedDate] = useState<string>(isoDate(today));
+
+  const [dayLoading, setDayLoading] = useState(false);
+  const [dayRows, setDayRows] = useState<
+    { av: AvRow; profile?: ProfileRow; terms?: MentorTerms }[]
+  >([]);
+
+  const months = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  const daysOfWeek = ["א","ב","ג","ד","ה","ו","ש"];
+
+  const daysInMonth = useMemo(() => endOfMonth(currentMonth, currentYear).getDate(), [currentMonth, currentYear]);
+  const firstDay = useMemo(() => startOfMonth(currentMonth, currentYear).getDay(), [currentMonth, currentYear]);
+
+  const loadMonthCounts = async () => {
+    setLoading(true);
+
+    const start = isoDate(startOfMonth(currentMonth, currentYear));
+    const end = isoDate(endOfMonth(currentMonth, currentYear));
+
+    const { data: av, error } = await supabase
+      .from("mentor_availability")
+      .select("date, mentor_id")
+      .gte("date", start)
+      .lte("date", end);
+
+    if (error) {
+      setCountsByDate({});
+      setLoading(false);
+      return;
+    }
+
+    const map: Record<string, Set<string>> = {};
+    (av as any[]).forEach((r) => {
+      if (!map[r.date]) map[r.date] = new Set();
+      map[r.date].add(r.mentor_id);
+    });
+
+    const counts: Record<string, number> = {};
+    Object.keys(map).forEach((d) => (counts[d] = map[d].size));
+
+    setCountsByDate(counts);
+    setLoading(false);
+  };
+
+  const loadDay = async (date: string) => {
+    setDayLoading(true);
+
+    const { data: av, error } = await supabase
+      .from("mentor_availability")
+      .select("id, mentor_id, date, start_time, end_time, notes")
+      .eq("date", date)
+      .order("start_time", { ascending: true });
+
+    if (error || !av) {
+      setDayRows([]);
+      setDayLoading(false);
+      return;
+    }
+
+    const mentorIds = Array.from(new Set((av as AvRow[]).map((x) => x.mentor_id)));
+
+    const [{ data: profs }, { data: terms }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, profession, city")
+        .in("id", mentorIds),
+      supabase
+        .from("mentor_terms")
+        .select("mentor_id, years_in_trade, day_rate, hourly_rate, work_includes, work_description, teaching_commitment, patience_commitment, teaching_included")
+        .in("mentor_id", mentorIds),
+    ]);
+
+    const profMap = new Map<string, ProfileRow>();
+    (profs as any[] | null || []).forEach((p) => profMap.set(p.id, p));
+
+    const termsMap = new Map<string, MentorTerms>();
+    (terms as any[] | null || []).forEach((t) => termsMap.set(t.mentor_id, t));
+
+    const combined = (av as AvRow[]).map((row) => ({
+      av: row,
+      profile: profMap.get(row.mentor_id),
+      terms: termsMap.get(row.mentor_id),
+    }));
+
+    setDayRows(combined);
+    setDayLoading(false);
+  };
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { router.push('/signup?mode=login'); return }
-      const { data: prof } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
-      setProfile(prof)
-      setLoading(false)
-    }
-    init()
-  }, [])
+    loadMonthCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMonth, currentYear]);
 
-  const nav = {
-    position: 'fixed' as const, bottom: 0, left: 0, right: 0, background: '#fff',
-    borderTop: '1px solid #eee', padding: '15px 30px', display: 'flex',
-    justifyContent: 'space-between', alignItems: 'center', zIndex: 100
-  }
-
-  const today = new Date()
-  const daysOfWeek = ['אחד','שני','שלישי','רביעי','חמישי','שישי','שבת']
-  const months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth())
-  const [currentYear, setCurrentYear] = useState(today.getFullYear())
-
-  const getDaysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate()
-  const getFirstDayOfMonth = (month: number, year: number) => new Date(year, month, 1).getDay()
+  useEffect(() => {
+    loadDay(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   const prevMonth = () => {
-    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1) }
-    else setCurrentMonth(currentMonth - 1)
-  }
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear((y) => y - 1);
+    } else setCurrentMonth((m) => m - 1);
+  };
+
   const nextMonth = () => {
-    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1) }
-    else setCurrentMonth(currentMonth + 1)
-  }
-
-  const daysInMonth = getDaysInMonth(currentMonth, currentYear)
-  const firstDay = getFirstDayOfMonth(currentMonth, currentYear)
-
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>טוען...</div>
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear((y) => y + 1);
+    } else setCurrentMonth((m) => m + 1);
+  };
 
   return (
-    <div style={{ background: '#fff', minHeight: '100vh', direction: 'rtl', fontFamily: 'system-ui,sans-serif', paddingBottom: '80px' }}>
-      {/* Header */}
-      <nav style={{ padding: '20px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '15px', position: 'sticky', top: 0, background: '#fff', zIndex: 10 }}>
-        <button onClick={() => router.back()} style={{ background: '#f5f5f5', borderRadius: '50%', width: '40px', height: '40px', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>🔙</button>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 900 }}>הלוח שיעורים</h1>
-      </nav>
-
-      {/* Calendar */}
-      <div style={{ padding: '20px' }}>
-        {/* Month navigation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <button onClick={nextMonth} style={{ background: 'none', border: '1px solid #ddd', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontWeight: 600 }}>&gt;</button>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>{months[currentMonth]} {currentYear}</h2>
-          <button onClick={prevMonth} style={{ background: 'none', border: '1px solid #ddd', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontWeight: 600 }}>&lt;</button>
-        </div>
-
-        {/* Days header */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
-          {daysOfWeek.map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.8rem', color: '#888', fontWeight: 600, padding: '8px 0' }}>{d}</div>)}
-        </div>
-
-        {/* Calendar grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-          {Array.from({ length: firstDay }).map((_, i) => <div key={'empty-' + i} />)}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day = i + 1
-            const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()
-            return (
-              <div key={day} style={{
-                textAlign: 'center', padding: '10px 4px', borderRadius: '8px', cursor: 'pointer',
-                background: isToday ? '#000' : '#f9f9f9',
-                color: isToday ? '#fff' : '#333',
-                fontWeight: isToday ? 800 : 400,
-                border: '1px solid', borderColor: isToday ? '#000' : '#eee'
-              }}>
-                {day}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Upcoming sessions */}
-        <div style={{ marginTop: '32px' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '16px' }}>שיעורים קרובים</h3>
-          <div style={{ textAlign: 'center', padding: '40px', background: '#f9f9f9', borderRadius: '12px', color: '#999' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>📅</div>
-            <p style={{ fontSize: '1rem', marginBottom: '16px' }}>אין שיעורים מתוכננים עדיין</p>
-            <button onClick={() => router.push('/search')}
-              style={{ background: '#000', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: '50px', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
-              מצא מנטור
-            </button>
+    <main dir="rtl" style={{ minHeight: "100vh", background: "#f4f6f8", padding: 18 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 420px", gap: 14, alignItems: "start" }}>
+        <section style={{ background: "#fff", border: "1px solid rgba(0,0,0,.10)", borderRadius: 16, padding: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div style={{ fontWeight: 950, fontSize: 16 }}>לוח זמינות</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={prevMonth} style={{ borderRadius: 12, border: "1px solid rgba(0,0,0,.12)", padding: "10px 12px", background: "#fff", fontWeight: 900 }}>‹</button>
+              <button onClick={nextMonth} style={{ borderRadius: 12, border: "1px solid rgba(0,0,0,.12)", padding: "10px 12px", background: "#fff", fontWeight: 900 }}>›</button>
+              <button onClick={() => router.push("/feed")} style={{ borderRadius: 12, border: "1px solid rgba(0,0,0,.12)", padding: "10px 12px", background: "#fff", fontWeight: 900 }}>Feed</button>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Bottom Navigation */}
-      <div style={nav}>
-        <div style={{ fontSize: '1.8rem', cursor: 'pointer', color: '#888' }} onClick={() => router.push('/feed')}>🏠</div>
-        <div style={{ fontSize: '1.8rem', cursor: 'pointer', color: '#888' }} onClick={() => router.push('/search')}>🔍</div>
-        <div style={{ fontSize: '1.8rem', cursor: 'pointer', color: '#888' }} onClick={() => router.push('/messages')}>💬</div>
-        <div style={{ fontSize: '1.8rem', cursor: 'pointer', color: '#000' }}>📅</div>
-        <div style={{ fontSize: '1.8rem', cursor: 'pointer', color: '#888' }} onClick={() => router.push('/profile')}>👤</div>
+          <div style={{ marginTop: 10, fontWeight: 900, color: "rgba(0,0,0,.7)" }}>
+            {months[currentMonth]} {currentYear}
+            {loading ? <span style={{ marginRight: 8, fontWeight: 800, color: "rgba(0,0,0,.5)" }}>· טוען...</span> : null}
+          </div>
+
+          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
+            {daysOfWeek.map((d) => (
+              <div key={d} style={{ fontWeight: 900, color: "rgba(0,0,0,.55)", textAlign: "center" }}>{d}</div>
+            ))}
+
+            {Array.from({ length: firstDay }).map((_, i) => (
+              <div key={`e-${i}`} />
+            ))}
+
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const date = isoDate(new Date(currentYear, currentMonth, day));
+              const count = countsByDate[date] || 0;
+              const isSel = selectedDate === date;
+              const isToday = date === isoDate(new Date());
+
+              return (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  style={{
+                    textAlign: "right",
+                    borderRadius: 14,
+                    border: isSel ? "1px solid rgba(24,119,242,.45)" : "1px solid rgba(0,0,0,.10)",
+                    background: isSel ? "rgba(24,119,242,.08)" : "#fff",
+                    padding: 10,
+                    minHeight: 70,
+                    cursor: "pointer",
+                    boxShadow: "0 12px 30px rgba(0,0,0,.06)",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                    <div style={{ fontWeight: 950 }}>{day}</div>
+                    {isToday ? <div style={{ fontSize: 12, fontWeight: 950, color: "#1877f2" }}>היום</div> : null}
+                  </div>
+
+                  <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, color: count ? "#0b1220" : "rgba(0,0,0,.45)" }}>
+                    {count ? `${count} זמינים` : "אין זמינות"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <aside style={{ background: "#fff", border: "1px solid rgba(0,0,0,.10)", borderRadius: 16, padding: 14 }}>
+          <div style={{ fontWeight: 950, fontSize: 16 }}>זמינים בתאריך</div>
+          <div style={{ marginTop: 6, fontWeight: 900, color: "rgba(0,0,0,.65)" }}>{selectedDate}</div>
+
+          {dayLoading ? (
+            <div style={{ marginTop: 12, fontWeight: 800 }}>טוען...</div>
+          ) : dayRows.length === 0 ? (
+            <div style={{ marginTop: 12, fontWeight: 850, color: "rgba(0,0,0,.65)" }}>אין בעלי מקצוע זמינים ביום הזה.</div>
+          ) : (
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              {dayRows.map(({ av, profile, terms }) => (
+                <div key={av.id} style={{ border: "1px solid rgba(0,0,0,.10)", borderRadius: 14, padding: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <img
+                        src={(profile?.avatar_url || "").trim() || "https://ui-avatars.com/api/?name=Mentor&background=111827&color=fff&bold=true&size=128"}
+                        alt="avatar"
+                        style={{ width: 36, height: 36, borderRadius: 999, objectFit: "cover" }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 950 }}>{profile?.full_name || av.mentor_id}</div>
+                        <div style={{ fontSize: 12, fontWeight: 850, color: "rgba(0,0,0,.65)" }}>
+                          {(profile?.profession || "").trim() || "בעל מקצוע"}{profile?.city ? ` · ${profile.city}` : ""}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 950 }}>
+                      {av.start_time.slice(0,5)}–{av.end_time.slice(0,5)}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 10, display: "grid", gap: 6, fontSize: 12, fontWeight: 850, color: "rgba(0,0,0,.70)" }}>
+                    {terms?.day_rate != null ? <div>שכר ליום: ₪{terms.day_rate}</div> : null}
+                    {terms?.hourly_rate != null ? <div>שכר לשעה: ₪{terms.hourly_rate}</div> : null}
+                    {terms?.years_in_trade != null ? <div>שנות ניסיון: {terms.years_in_trade}</div> : null}
+                    {terms?.working_hours ? <div>שעות עבודה: {terms.working_hours}</div> : null}
+                    {terms?.teaching_included != null ? <div>לימוד כלול: {terms.teaching_included ? "כן" : "לא"}</div> : null}
+                    {terms?.teaching_commitment != null ? <div>התחייבות ללמד: {terms.teaching_commitment ? "כן" : "לא"}</div> : null}
+                    {terms?.patience_commitment != null ? <div>סבלנות לתלמיד מתחיל: {terms.patience_commitment ? "כן" : "לא"}</div> : null}
+                    {terms?.work_includes ? <div>כולל: {terms.work_includes}</div> : null}
+                    {terms?.work_description ? <div>מה ילמד: {terms.work_description}</div> : null}
+                    {av.notes ? <div>הערות: {av.notes}</div> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </aside>
       </div>
-    </div>
-  )
+    </main>
+  );
 }
